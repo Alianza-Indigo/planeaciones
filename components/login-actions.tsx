@@ -12,7 +12,7 @@ export function LoginActions() {
 
   if (session?.user) {
     return (
-      <div className="grid">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start" }}>
         <span className="badge">{session.user.email}</span>
         <button className="button secondary" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
           <LogOut size={17} />

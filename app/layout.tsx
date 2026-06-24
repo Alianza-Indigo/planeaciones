@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Syne } from "next/font/google";
 
 import { Providers } from "@/app/providers";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-inter",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["700", "800"],
+  variable: "--font-syne",
+});
 
 export const metadata: Metadata = {
   title: "ADIA — Generador de Planeaciones Didácticas",
@@ -20,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${inter.variable} ${syne.variable}`}>
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

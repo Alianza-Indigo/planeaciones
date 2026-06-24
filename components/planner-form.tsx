@@ -1,7 +1,6 @@
 "use client";
 
-import clsx from "clsx";
-import { Loader2, Sparkles, ToggleLeft, ToggleRight } from "lucide-react";
+import { Loader2, Sparkles, Upload, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -28,22 +27,26 @@ const ESTRATEGIAS = [
   "Material imprimible",
 ];
 
-const CONDICIONES: { value: string; label: string }[] = [
-  { value: "tdah", label: "TDAH" },
-  { value: "tea", label: "TEA" },
-  { value: "dislexia", label: "Dislexia" },
-  { value: "discalculia", label: "Discalculia" },
-  { value: "disfasia", label: "Disfasia / DLD" },
-  { value: "discapacidad_intelectual", label: "Discapacidad intelectual" },
-  { value: "hipersensibilidad_sensorial", label: "Hipersensibilidad sensorial" },
-  { value: "altas_capacidades", label: "Altas capacidades" },
-  { value: "dificultades_motoras", label: "Dificultades motoras" },
-  { value: "ansiedad_escolar", label: "Ansiedad escolar" },
-  { value: "otra", label: "Otra" },
+const CONDICIONES: { value: string; title: string; sub: string }[] = [
+  { value: "tdah", title: "TDAH", sub: "Atención, hiperactividad e impulsividad" },
+  { value: "tea", title: "TEA", sub: "Trastorno del espectro autista" },
+  { value: "dislexia", title: "Dislexia", sub: "Dificultades en lectura y escritura" },
+  { value: "discalculia", title: "Discalculia", sub: "Dificultades con números y cálculo" },
+  { value: "disfasia", title: "Disfasia / DLD", sub: "Trastorno del desarrollo del lenguaje" },
+  { value: "discapacidad_intelectual", title: "Discapacidad intelectual", sub: "Leve a moderada" },
+  {
+    value: "hipersensibilidad_sensorial",
+    title: "Hipersensibilidad sensorial",
+    sub: "Auditiva, táctil, visual o propioceptiva",
+  },
+  { value: "altas_capacidades", title: "Altas capacidades", sub: "Superdotación o talento específico" },
+  { value: "dificultades_motoras", title: "Dificultades motoras", sub: "Motricidad fina o gruesa" },
+  { value: "ansiedad_escolar", title: "Ansiedad escolar", sub: "Bloqueos, evasión o mutismo selectivo" },
+  { value: "otra", title: "Otra condición", sub: "Especificar manualmente" },
 ];
 
 const NIVELES: { value: "compacto" | "estandar" | "detallado"; label: string }[] = [
-  { value: "compacto", label: "Compacto" },
+  { value: "compacto", label: "Básico" },
   { value: "estandar", label: "Estándar" },
   { value: "detallado", label: "Detallado" },
 ];
@@ -52,20 +55,24 @@ function toggle(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 export function PlannerForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Datos del docente
-  const [nombreDocente, setNombreDocente] = useState("Diana");
-  const [nombreEscuela, setNombreEscuela] = useState("Escuela primaria");
-  const [periodoPlaneado, setPeriodoPlaneado] = useState("Semana 1");
+  const [nombreDocente, setNombreDocente] = useState("");
+  const [nombreEscuela, setNombreEscuela] = useState("");
+  const [periodoPlaneado, setPeriodoPlaneado] = useState("");
 
   // Configuración del grupo
   const [grado, setGrado] = useState("3 primaria");
   const [fase, setFase] = useState("Fase 4");
-  const [sesiones, setSesiones] = useState(5);
+  const [sesiones, setSesiones] = useState(6);
   const [duracion, setDuracion] = useState(50);
   const [modalidad, setModalidad] = useState<"secuencial" | "proyecto">("secuencial");
 
@@ -77,10 +84,10 @@ export function PlannerForm() {
   const [pdaSel, setPdaSel] = useState<string[]>([]);
 
   // Evaluación
-  const [estrategias, setEstrategias] = useState<string[]>([...ESTRATEGIAS]);
+  const [estrategias, setEstrategias] = useState<string[]>(["Rúbrica", "Lista de cotejo"]);
 
   // Tema y contexto
-  const [proyecto, setProyecto] = useState("Guardianes del entorno");
+  const [proyecto, setProyecto] = useState("");
   const [contextoGrupo, setContextoGrupo] = useState("");
   const [materialesDisponibles, setMaterialesDisponibles] = useState("");
 
@@ -139,6 +146,11 @@ export function PlannerForm() {
     [campos, contenidosPorCampo],
   );
 
+  const totalContenidos = useMemo(
+    () => contenidosDisponibles.reduce((acc, grupo) => acc + grupo.contenidos.length, 0),
+    [contenidosDisponibles],
+  );
+
   // PDA disponibles derivados de los contenidos seleccionados (sin duplicados).
   const pdaDisponibles = useMemo(() => {
     const todos = contenidosDisponibles
@@ -161,6 +173,10 @@ export function PlannerForm() {
     event.preventDefault();
     setError(null);
 
+    if (!nombreDocente || !nombreEscuela || !periodoPlaneado || !proyecto) {
+      setError("Completa los datos del docente y el tema detonador.");
+      return;
+    }
     if (campos.length === 0) {
       setError("Selecciona al menos un campo formativo.");
       return;
@@ -216,45 +232,48 @@ export function PlannerForm() {
   }
 
   return (
-    <form className="panel grid" onSubmit={onSubmit}>
+    <form onSubmit={onSubmit}>
       {/* 1. Datos del docente */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Datos del docente</h2>
-        <div className="formGrid">
+      <div className="section-label">Datos del docente</div>
+      <div className="card">
+        <div className="grid-3">
           <div className="field">
-            <label htmlFor="nombreDocente">Docente</label>
+            <label htmlFor="nombreDocente">Nombre del docente</label>
             <input
               id="nombreDocente"
+              type="text"
               value={nombreDocente}
               onChange={(event) => setNombreDocente(event.target.value)}
-              required
+              placeholder="Ej: María González López"
             />
           </div>
           <div className="field">
-            <label htmlFor="nombreEscuela">Escuela</label>
+            <label htmlFor="nombreEscuela">Nombre de la escuela</label>
             <input
               id="nombreEscuela"
+              type="text"
               value={nombreEscuela}
               onChange={(event) => setNombreEscuela(event.target.value)}
-              required
+              placeholder="Ej: Primaria Benito Juárez"
             />
           </div>
-          <div className="field span2">
+          <div className="field">
             <label htmlFor="periodoPlaneado">Periodo planeado</label>
             <input
               id="periodoPlaneado"
+              type="text"
               value={periodoPlaneado}
               onChange={(event) => setPeriodoPlaneado(event.target.value)}
-              required
+              placeholder="Ej: Enero – Febrero 2025"
             />
           </div>
         </div>
-      </section>
+      </div>
 
       {/* 2. Configuración del grupo */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Configuración del grupo</h2>
-        <div className="formGrid">
+      <div className="section-label">Configuración del grupo</div>
+      <div className="card">
+        <div className="grid-3" style={{ marginBottom: 16 }}>
           <div className="field">
             <label htmlFor="grado">Grado</label>
             <select id="grado" value={grado} onChange={(event) => setGrado(event.target.value)}>
@@ -272,32 +291,8 @@ export function PlannerForm() {
             </select>
           </div>
           <div className="field">
-            <label htmlFor="sesiones">Sesiones</label>
-            <input
-              id="sesiones"
-              type="number"
-              min={1}
-              max={20}
-              value={sesiones}
-              onChange={(event) => setSesiones(Number(event.target.value))}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="duracion">Minutos por sesión</label>
-            <input
-              id="duracion"
-              type="number"
-              min={30}
-              max={240}
-              value={duracion}
-              onChange={(event) => setDuracion(Number(event.target.value))}
-              required
-            />
-          </div>
-          <div className="field span2">
             <label>Modalidad</label>
-            <div className="segmented">
+            <div className="toggle-group">
               <button
                 type="button"
                 data-active={modalidad === "secuencial"}
@@ -310,57 +305,126 @@ export function PlannerForm() {
                 data-active={modalidad === "proyecto"}
                 onClick={() => setModalidad("proyecto")}
               >
-                Por proyecto
+                Proyecto
               </button>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* 3. Contenidos y procesos */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Contenidos y procesos</h2>
-        <div className="field">
-          <label>Campos formativos</label>
-          <p className="sectionHint">Selecciona los campos para cargar sus contenidos.</p>
-          <div className="checks">
-            {camposDisponibles.map((campo) => (
+        <div className="grid-2">
+          <div className="field">
+            <label htmlFor="sesiones">Sesiones</label>
+            <div className="number-input">
               <button
-                key={campo}
                 type="button"
-                className="chipButton"
-                data-selected={campos.includes(campo)}
-                onClick={() => toggleCampo(campo)}
+                className="num-btn left"
+                onClick={() => setSesiones((value) => clamp(value - 1, 1, 20))}
+                aria-label="Menos sesiones"
               >
-                {campo}
+                −
               </button>
-            ))}
-            {camposDisponibles.length === 0 ? (
-              <span className="sectionHint">Cargando campos del grado…</span>
-            ) : null}
+              <input
+                id="sesiones"
+                type="number"
+                min={1}
+                max={20}
+                value={sesiones}
+                onChange={(event) => setSesiones(clamp(Number(event.target.value), 1, 20))}
+              />
+              <button
+                type="button"
+                className="num-btn right"
+                onClick={() => setSesiones((value) => clamp(value + 1, 1, 20))}
+                aria-label="Más sesiones"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="duracion">Duración (min)</label>
+            <div className="number-input">
+              <button
+                type="button"
+                className="num-btn left"
+                onClick={() => setDuracion((value) => clamp(value - 5, 30, 240))}
+                aria-label="Menos minutos"
+              >
+                −
+              </button>
+              <input
+                id="duracion"
+                type="number"
+                min={30}
+                max={240}
+                step={5}
+                value={duracion}
+                onChange={(event) => setDuracion(clamp(Number(event.target.value), 30, 240))}
+              />
+              <button
+                type="button"
+                className="num-btn right"
+                onClick={() => setDuracion((value) => clamp(value + 5, 30, 240))}
+                aria-label="Más minutos"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* 3. Contenidos y procesos */}
+      <div className="section-label">Contenidos y procesos</div>
+      <div className="card">
+        <div className="contenidos-header">
+          <label style={{ fontSize: 12, color: "var(--text)" }}>Campos formativos</label>
+          <span className="link-action">
+            <Upload size={11} />
+            {contenidosSel.length} de {totalContenidos} contenidos
+          </span>
+        </div>
+        <div className="chips">
+          {camposDisponibles.map((campo) => (
+            <button
+              key={campo}
+              type="button"
+              className="chip"
+              data-active={campos.includes(campo)}
+              onClick={() => toggleCampo(campo)}
+            >
+              {campo}
+            </button>
+          ))}
+          {camposDisponibles.length === 0 ? (
+            <span className="hint">Cargando campos del grado…</span>
+          ) : null}
+        </div>
+        <p className="hint">
+          Selecciona uno o más campos para cargar sus contenidos curriculares según el grado.
+        </p>
 
         {campos.length > 0 ? (
-          <div className="field">
-            <label>Contenidos</label>
-            <div className="cascadeList">
+          <div className="field" style={{ marginTop: 16 }}>
+            <label>Contenidos curriculares</label>
+            <div className="cascade-list">
               {contenidosDisponibles.map((grupo) => (
-                <div className="cascadeGroup" key={grupo.campo}>
+                <div className="cascade-group" key={grupo.campo}>
                   <strong>{grupo.campo}</strong>
-                  {grupo.contenidos.map((contenido) => (
-                    <button
-                      key={contenido.id}
-                      type="button"
-                      className="chipButton"
-                      data-selected={contenidosSel.includes(contenido.id)}
-                      onClick={() => setContenidosSel((prev) => toggle(prev, contenido.id))}
-                    >
-                      {contenido.titulo}
-                    </button>
-                  ))}
+                  <div className="chips">
+                    {grupo.contenidos.map((contenido) => (
+                      <button
+                        key={contenido.id}
+                        type="button"
+                        className="chip"
+                        data-active={contenidosSel.includes(contenido.id)}
+                        onClick={() => setContenidosSel((prev) => toggle(prev, contenido.id))}
+                      >
+                        {contenido.titulo}
+                      </button>
+                    ))}
+                  </div>
                   {grupo.contenidos.length === 0 ? (
-                    <span className="sectionHint">Cargando contenidos…</span>
+                    <span className="hint">Cargando contenidos…</span>
                   ) : null}
                 </div>
               ))}
@@ -369,145 +433,171 @@ export function PlannerForm() {
         ) : null}
 
         {pdaDisponibles.length > 0 ? (
-          <div className="field">
-            <label>Procesos de desarrollo de aprendizaje (PDA)</label>
-            <p className="sectionHint">
-              Derivados de los contenidos seleccionados. Desactiva los que no apliquen.
-            </p>
-            <div className="cascadeList">
-              {pdaDisponibles.map((pda, index) => (
-                <button
-                  key={`${index}-${pda.slice(0, 24)}`}
-                  type="button"
-                  className="chipButton"
-                  data-selected={pdaSel.includes(pda)}
-                  onClick={() => setPdaSel((prev) => toggle(prev, pda))}
-                >
-                  {pda}
-                </button>
-              ))}
+          <div className="field" style={{ marginTop: 16 }}>
+            <label>Procesos de Desarrollo de Aprendizaje (PDA)</label>
+            <div className="cascade-list">
+              <div className="chips">
+                {pdaDisponibles.map((pda, index) => (
+                  <button
+                    key={`${index}-${pda.slice(0, 24)}`}
+                    type="button"
+                    className="chip"
+                    data-active={pdaSel.includes(pda)}
+                    onClick={() => setPdaSel((prev) => toggle(prev, pda))}
+                  >
+                    {pda}
+                  </button>
+                ))}
+              </div>
             </div>
+            <p className="hint">Los PDA se derivan de los contenidos seleccionados. Desactiva los que no apliquen.</p>
           </div>
         ) : null}
-      </section>
+      </div>
 
       {/* 4. Estrategias de evaluación */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Estrategias de evaluación</h2>
-        <div className="checks">
+      <div className="section-label">Estrategias de evaluación</div>
+      <div className="card">
+        <div className="chips">
           {ESTRATEGIAS.map((estrategia) => (
             <button
               key={estrategia}
               type="button"
-              className="chipButton"
-              data-selected={estrategias.includes(estrategia)}
+              className="chip"
+              data-active={estrategias.includes(estrategia)}
               onClick={() => setEstrategias((prev) => toggle(prev, estrategia))}
             >
               {estrategia}
             </button>
           ))}
         </div>
-      </section>
+      </div>
 
       {/* 5. Tema y contexto */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Tema y contexto</h2>
-        <div className="formGrid">
-          <div className="field span2">
-            <label htmlFor="proyecto">Proyecto o tema detonador</label>
-            <input
-              id="proyecto"
-              value={proyecto}
-              onChange={(event) => setProyecto(event.target.value)}
-              required
-            />
-          </div>
-          <div className="field span2">
-            <label htmlFor="contextoGrupo">Contexto del grupo</label>
-            <textarea
-              id="contextoGrupo"
-              value={contextoGrupo}
-              onChange={(event) => setContextoGrupo(event.target.value)}
-              placeholder="Tamaño del grupo, dinámica, entorno…"
-            />
-          </div>
-          <div className="field span2">
-            <label htmlFor="materialesDisponibles">Recursos disponibles</label>
-            <textarea
-              id="materialesDisponibles"
-              value={materialesDisponibles}
-              onChange={(event) => setMaterialesDisponibles(event.target.value)}
-              placeholder="Materiales, espacios y tecnología con los que cuenta el aula…"
-            />
-          </div>
+      <div className="section-label">Tema y contexto</div>
+      <div className="card">
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="proyecto">Tema detonador</label>
+          <textarea
+            id="proyecto"
+            value={proyecto}
+            onChange={(event) => setProyecto(event.target.value)}
+            placeholder="Describe la idea o proyecto central que guiará el aprendizaje del grupo..."
+          />
         </div>
-      </section>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="contextoGrupo">
+            Contexto del grupo <span style={{ color: "#45426A" }}>(opcional)</span>
+          </label>
+          <input
+            id="contextoGrupo"
+            type="text"
+            value={contextoGrupo}
+            onChange={(event) => setContextoGrupo(event.target.value)}
+            placeholder="Tamaño del grupo, dinámica, entorno..."
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="materialesDisponibles">
+            Recursos y materiales disponibles <span style={{ color: "#45426A" }}>(opcional)</span>
+          </label>
+          <input
+            id="materialesDisponibles"
+            type="text"
+            value={materialesDisponibles}
+            onChange={(event) => setMaterialesDisponibles(event.target.value)}
+            placeholder="Aula, internet, proyector, cartulinas, tablets..."
+          />
+        </div>
+      </div>
 
       {/* 6. Neuroinclusividad */}
-      <section className="formSection">
-        <h2 className="sectionTitle">Neuroinclusividad</h2>
-        <button
-          type="button"
-          className="switch"
-          data-on={niActiva}
-          onClick={() => setNiActiva((value) => !value)}
-        >
-          {niActiva ? <ToggleRight size={26} /> : <ToggleLeft size={26} />}
-          {niActiva ? "Adaptaciones activas" : "Activar adaptaciones"}
-        </button>
+      <div className="section-label">Neuroinclusividad</div>
+      <div className="card">
+        <div className="ni-toggle-row">
+          <div className="ni-toggle-label">
+            <Users size={16} />
+            Incluir adaptaciones neuroinclusivas
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {niActiva ? <span className="ni-badge">Activo</span> : null}
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={niActiva}
+                onChange={(event) => setNiActiva(event.target.checked)}
+              />
+              <span className="switch-slider" />
+            </label>
+          </div>
+        </div>
 
         {niActiva ? (
-          <>
-            <div className="condGrid">
+          <div className="ni-panel">
+            <p className="ni-desc">
+              Selecciona las condiciones presentes en tu grupo. La planeación incluirá estrategias y adaptaciones
+              específicas para cada una.
+            </p>
+
+            <div className="ni-grid">
               {CONDICIONES.map((condicion) => (
                 <button
                   key={condicion.value}
                   type="button"
-                  className={clsx("chipButton")}
-                  data-selected={condiciones.includes(condicion.value)}
+                  className="ni-item"
+                  data-active={condiciones.includes(condicion.value)}
                   onClick={() => setCondiciones((prev) => toggle(prev, condicion.value))}
                 >
-                  {condicion.label}
+                  <span className="ni-check" />
+                  <span className="ni-item-text">
+                    <span className="ni-item-title">{condicion.title}</span>
+                    <span className="ni-item-sub">{condicion.sub}</span>
+                  </span>
                 </button>
               ))}
             </div>
+
             {condiciones.includes("otra") ? (
-              <div className="field">
-                <label htmlFor="otraDescripcion">Describe la otra condición</label>
+              <div style={{ marginTop: 8 }}>
                 <input
-                  id="otraDescripcion"
+                  type="text"
                   value={otraDescripcion}
                   onChange={(event) => setOtraDescripcion(event.target.value)}
-                  placeholder="Condición específica del grupo"
+                  placeholder="Describe la condición o necesidad específica del estudiante..."
                 />
               </div>
             ) : null}
-          </>
-        ) : null}
 
-        <div className="field">
-          <label>Nivel de detalle</label>
-          <div className="segmented">
-            {NIVELES.map((nivel) => (
-              <button
-                key={nivel.value}
-                type="button"
-                data-active={nivelDetalle === nivel.value}
-                onClick={() => setNivelDetalle(nivel.value)}
-              >
-                {nivel.label}
-              </button>
-            ))}
+            <div className="ni-intensity">
+              <label>Nivel de detalle de las adaptaciones</label>
+              <div className="intensity-options">
+                {NIVELES.map((nivel) => (
+                  <button
+                    key={nivel.value}
+                    type="button"
+                    className="intensity-opt"
+                    data-active={nivelDetalle === nivel.value}
+                    onClick={() => setNivelDetalle(nivel.value)}
+                  >
+                    {nivel.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        ) : null}
+      </div>
 
-      {error ? <p className="badge">{error}</p> : null}
-
-      <button className="button primary" type="submit" disabled={loading}>
-        {loading ? <Loader2 size={17} /> : <Sparkles size={17} />}
-        Generar planeación
-      </button>
+      <div className="cta-area">
+        {error ? <p className="alert">{error}</p> : null}
+        <button className="btn-generate" type="submit" disabled={loading}>
+          {loading ? <Loader2 size={18} className="spin" /> : <Sparkles size={18} />}
+          {loading ? "Generando…" : "Generar Planeación"}
+        </button>
+        <p className="cta-note">
+          Los recuadros de salida son editables. Puedes copiar o descargar la planeación generada.
+        </p>
+      </div>
     </form>
   );
 }

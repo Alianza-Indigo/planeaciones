@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Download, Save, UploadCloud } from "lucide-react";
+import { AlertTriangle, Copy, Download, Printer, Save, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type Draft = {
@@ -13,7 +13,8 @@ type Draft = {
 
 export function DraftEditor({ draftId }: { draftId: string }) {
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [status, setStatus] = useState("Cargando draft...");
+  const [status, setStatus] = useState("Cargando planeación…");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch(`/api/drafts/${draftId}`)
@@ -22,7 +23,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
         setDraft(payload);
         setStatus("");
       })
-      .catch(() => setStatus("No se pudo cargar el draft."));
+      .catch(() => setStatus("No se pudo cargar la planeación."));
   }, [draftId]);
 
   // Conteo de palabras y páginas estimadas (~300 palabras por página).
@@ -40,7 +41,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
 
   async function save() {
     if (!draft) return;
-    setStatus("Guardando cambios temporales...");
+    setStatus("Guardando cambios…");
     await fetch(`/api/drafts/${draft.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -51,7 +52,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
 
   async function exportToDrive() {
     if (!draft) return;
-    setStatus("Enviando a Google Drive...");
+    setStatus("Enviando a Google Drive…");
     const response = await fetch("/api/drive/export", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -62,6 +63,29 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     if (payload.url) {
       setDraft({ ...draft, exportedDocUrl: payload.url });
     }
+  }
+
+  function copyContent() {
+    if (!draft) return;
+    navigator.clipboard.writeText(draft.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function printContent() {
+    if (!draft) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const safe = draft.content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    win.document.write(
+      `<html><head><title>${draft.title}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;line-height:1.8;color:#111;white-space:pre-wrap;font-size:14px;}@media print{body{margin:20px;}}</style></head><body>${safe}</body></html>`,
+    );
+    win.document.close();
+    win.print();
   }
 
   function downloadMarkdown() {
@@ -76,52 +100,77 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   }
 
   if (!draft) {
-    return <div className="empty">{status}</div>;
+    return (
+      <div className="empty-state">
+        <h3>{status}</h3>
+      </div>
+    );
   }
 
   return (
-    <div className="grid">
-      <div className="pageHeader">
-        <div>
-          <span className="eyebrow">Draft temporal</span>
-          <h1>{draft.title}</h1>
-          <p>Editar, revisar y enviar al Drive del docente. El contenido no se conserva permanentemente.</p>
+    <>
+      <div className="plan-header">
+        <h2>{draft.title}</h2>
+        <p>Edita la planeación generada. El contenido es temporal: expórtalo o descárgalo para conservarlo.</p>
+        <div className="plan-meta">
+          <span className="plan-tag">
+            ~{palabras} palabras
+          </span>
+          <span className="plan-tag">
+            {paginas} {paginas === 1 ? "página" : "páginas"} aprox.
+          </span>
+          {draft.exportedDocUrl ? (
+            <a className="plan-tag" href={draft.exportedDocUrl} target="_blank" rel="noreferrer">
+              Abrir en Drive ↗
+            </a>
+          ) : null}
         </div>
-        <div className="checks">
-          <button className="button secondary" type="button" onClick={save}>
-            <Save size={17} />
+      </div>
+
+      {expiraPronto ? (
+        <p className="alert warn" style={{ marginBottom: 12 }}>
+          <AlertTriangle size={15} />
+          Esta planeación expira pronto. Expórtala a Drive o descárgala para conservarla.
+        </p>
+      ) : null}
+
+      <div className="preview-toolbar">
+        <h3>Planeación — Texto completo</h3>
+        <div className="preview-actions">
+          <button className="btn-icon-sm" type="button" onClick={save}>
+            <Save size={13} />
             Guardar
           </button>
-          <button className="button secondary" type="button" onClick={downloadMarkdown}>
-            <Download size={17} />
+          <button className="btn-icon-sm" type="button" onClick={copyContent}>
+            <Copy size={13} />
+            {copied ? "Copiado" : "Copiar"}
+          </button>
+          <button className="btn-icon-sm" type="button" onClick={printContent}>
+            <Printer size={13} />
+            Imprimir
+          </button>
+          <button className="btn-icon-sm" type="button" onClick={downloadMarkdown}>
+            <Download size={13} />
             Descargar
           </button>
-          <button className="button primary" type="button" onClick={exportToDrive}>
-            <UploadCloud size={17} />
+          <button className="btn-icon-sm primary" type="button" onClick={exportToDrive}>
+            <UploadCloud size={13} />
             Drive
           </button>
         </div>
       </div>
-      {expiraPronto ? (
-        <p className="badge" style={{ borderColor: "var(--amber)", color: "var(--amber)" }}>
-          <AlertTriangle size={14} style={{ verticalAlign: "-2px" }} /> Este borrador expira pronto.
-          Expórtalo a Drive o descárgalo para conservarlo.
+
+      {status ? (
+        <p className="hint" style={{ marginBottom: 8 }}>
+          {status}
         </p>
       ) : null}
-      {status ? <span className="badge">{status}</span> : null}
-      {draft.exportedDocUrl ? (
-        <a className="badge" href={draft.exportedDocUrl} target="_blank" rel="noreferrer">
-          Abrir archivo exportado
-        </a>
-      ) : null}
+
       <textarea
-        className="editor"
+        className="preview-textarea"
         value={draft.content}
         onChange={(event) => setDraft({ ...draft, content: event.target.value })}
       />
-      <span className="badge">
-        ~{palabras} palabras · {paginas} {paginas === 1 ? "página estimada" : "páginas estimadas"}
-      </span>
-    </div>
+    </>
   );
 }

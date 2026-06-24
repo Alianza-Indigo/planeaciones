@@ -1,7 +1,7 @@
 import { BadgeCheck } from "lucide-react";
 
-import { AppShell } from "@/components/app-shell";
 import { PaymentButton } from "@/components/payment-button";
+import { TeacherShell } from "@/components/teacher-shell";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -16,15 +16,15 @@ export default async function AccountPage() {
 
   if (!session?.user) {
     return (
-      <AppShell>
-        <div className="pageHeader">
-          <div>
-            <span className="eyebrow">Cuenta</span>
+      <TeacherShell>
+        <div className="page-inner">
+          <div className="page-header">
+            <span className="eyebrow">Mi cuenta</span>
             <h1>Membresía y uso</h1>
             <p>Inicia sesión para ver tu plan y tus generaciones disponibles.</p>
           </div>
         </div>
-      </AppShell>
+      </TeacherShell>
     );
   }
 
@@ -36,53 +36,55 @@ export default async function AccountPage() {
   const used = membership?.generationsUsed ?? 0;
   const limit = membership?.generationLimit ?? 3;
   const periodEnd = membership?.currentPeriodEndsAt ?? null;
-  const isActive =
-    membership?.status === "ACTIVE" && (!periodEnd || periodEnd > new Date());
+  const isActive = membership?.status === "ACTIVE" && (!periodEnd || periodEnd > new Date());
   const ilimitado = isActive && limit >= 999999;
 
   return (
-    <AppShell>
-      <div className="pageHeader">
-        <div>
-          <span className="eyebrow">Cuenta</span>
+    <TeacherShell>
+      <div className="page-inner wide">
+        <div className="page-header">
+          <span className="eyebrow">Mi cuenta</span>
           <h1>Membresía y uso</h1>
           <p>Consulta tu plan, las generaciones disponibles y activa tu acceso anual.</p>
         </div>
-      </div>
-      <div className="grid three">
-        <section className="panel stat">
-          <span className="badge">Plan</span>
-          <strong>{isActive ? "ANNUAL" : "FREE"}</strong>
-          {isActive ? (
+
+        <div className="grid-3">
+          <section className="stat">
+            <span className="stat-label">Plan</span>
+            <strong>{isActive ? "ANUAL" : "GRATIS"}</strong>
+            {isActive ? (
+              <p>
+                <BadgeCheck size={14} style={{ verticalAlign: "-2px" }} /> Activo
+                {periodEnd ? ` · renueva el ${formatDate(periodEnd)}` : ""}
+              </p>
+            ) : (
+              <p>{plan === "FREE" ? "Estás en el plan gratuito." : "Tu membresía expiró."}</p>
+            )}
+          </section>
+
+          <section className="stat">
+            <span className="stat-label">Generaciones</span>
+            <strong>{ilimitado ? "Ilimitadas" : `${used} / ${limit}`}</strong>
             <p>
-              <BadgeCheck size={15} style={{ verticalAlign: "-2px" }} /> Activo
-              {periodEnd ? ` · renueva el ${formatDate(periodEnd)}` : ""}
+              {ilimitado
+                ? "Tu membresía anual no tiene tope de generaciones."
+                : `Has usado ${used} de ${limit} generaciones gratuitas.`}
             </p>
-          ) : (
-            <p>{plan === "FREE" ? "Estás en el plan gratuito." : "Tu membresía expiró."}</p>
-          )}
-        </section>
-        <section className="panel stat">
-          <span className="badge">Generaciones</span>
-          <strong>{ilimitado ? "Ilimitadas" : `${used} / ${limit}`}</strong>
-          <p>
-            {ilimitado
-              ? "Tu membresía anual no tiene tope de generaciones."
-              : `Has usado ${used} de ${limit} generaciones gratuitas.`}
-          </p>
-        </section>
-        <section className="panel grid">
-          <h2>ADIA — Membresía Anual</h2>
-          {isActive ? (
-            <p>Tu membresía está activa. ¡Gracias por apoyar el proyecto!</p>
-          ) : (
-            <>
-              <p>Acceso ilimitado a generación de planeaciones por 1 año — $99 MXN.</p>
-              <PaymentButton />
-            </>
-          )}
-        </section>
+          </section>
+
+          <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12, margin: 0 }}>
+            <h2 style={{ fontSize: 16 }}>ADIA — Membresía Anual</h2>
+            {isActive ? (
+              <p className="hint">Tu membresía está activa. ¡Gracias por apoyar el proyecto!</p>
+            ) : (
+              <>
+                <p className="hint">Acceso ilimitado a generación de planeaciones por 1 año — $99 MXN.</p>
+                <PaymentButton />
+              </>
+            )}
+          </section>
+        </div>
       </div>
-    </AppShell>
+    </TeacherShell>
   );
 }
