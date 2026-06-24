@@ -19,7 +19,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Inicia sesion para generar planeaciones." }, { status: 401 });
   }
 
-  const input = planningInputSchema.parse(await request.json());
+  const parsed = planningInputSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos de la planeación inválidos.", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+  const input = parsed.data;
+
+  // Guard de membresía: usuarios FREE tienen un límite de generaciones; los
+  // miembros activos generan sin tope. Se verifica antes de gastar la llamada al LLM.
+  const membership = await prisma.membership.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  const canGenerate =
+    !membership ||
+    membership.status === "ACTIVE" ||
+    membership.generationsUsed < membership.generationLimit;
+
+  if (!canGenerate) {
+    return NextResponse.json(
+      { error: "Límite de generaciones alcanzado. Activa tu membresía para continuar." },
+      { status: 403 },
+    );
+  }
+
   const activePrompt = await prisma.promptTemplate.findFirst({
     where: { kind: "PLANNING", isActive: true },
     orderBy: { version: "desc" },
