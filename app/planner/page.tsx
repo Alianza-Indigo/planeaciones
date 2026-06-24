@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
+
 import { AppShell } from "@/components/app-shell";
 import { PlannerForm } from "@/components/planner-form";
+
+export const metadata: Metadata = {
+  title: "Nueva planeación — ADIA",
+};
 
 export default function PlannerPage() {
   return (

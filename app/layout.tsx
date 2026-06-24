@@ -7,8 +7,15 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Planeaciones",
-  description: "Generador de planeaciones didacticas de Alianza Indigo",
+  title: "ADIA — Generador de Planeaciones Didácticas",
+  description:
+    "Herramienta de IA para docentes mexicanos. Genera planeaciones inclusivas alineadas a la Nueva Escuela Mexicana con adaptaciones neuroinclusivas.",
+  openGraph: {
+    title: "ADIA — Planeaciones Didácticas con IA",
+    description:
+      "Genera planeaciones NEM en minutos con adaptaciones para TDAH, TEA, dislexia y más.",
+    url: "https://adia.alianzaindigo.org",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
