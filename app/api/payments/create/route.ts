@@ -16,15 +16,15 @@ export async function POST() {
   const payment = await prisma.payment.create({
     data: {
       userId: session.user.id,
-      amountCents: 19900,
+      amountCents: 9900,
       currency: "MXN",
       status: "PENDING",
     },
   });
 
   const preference = await createMercadoPagoPreference({
-    title: "Planeaciones Pro",
-    description: "Acceso mensual a generacion de planeaciones",
+    title: "ADIA — Membresía Anual",
+    description: "Acceso ilimitado a generación de planeaciones didácticas por 1 año",
     amountCents: payment.amountCents,
     userId: session.user.id,
     paymentId: payment.id,
