@@ -46,3 +46,26 @@ export async function createMercadoPagoPreference(input: CheckoutPreferenceInput
 
   return response.json() as Promise<{ id: string; init_point: string; sandbox_init_point?: string }>;
 }
+
+export type MercadoPagoPayment = {
+  id: number | string;
+  status: string;
+  external_reference?: string | null;
+};
+
+// Consulta autoritativa del pago en la API de Mercado Pago. El webhook nunca
+// confía en el cuerpo de la notificación: vuelve a leer el estado real aquí.
+export async function getMercadoPagoPayment(paymentId: string): Promise<MercadoPagoPayment> {
+  const env = getMercadoPagoEnv();
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: {
+      authorization: `Bearer ${env.MERCADOPAGO_ACCESS_TOKEN}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Mercado Pago respondio ${response.status}: ${await response.text()}`);
+  }
+
+  return response.json() as Promise<MercadoPagoPayment>;
+}
