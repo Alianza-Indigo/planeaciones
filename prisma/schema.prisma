@@ -7,9 +7,9 @@ datasource db {
   provider  = "postgresql"
   // Conexión pooled (pgbouncer) para el runtime serverless.
   url       = env("DATABASE_URL")
-  // Conexión directa para migraciones (prisma migrate deploy). En Neon es la
-  // URL sin "-pooler". Debe estar definida (Prisma no hace fallback).
-  directUrl = env("DIRECT_URL")
+  // Conexión directa para migraciones. La integración Neon de Vercel inyecta
+  // DATABASE_URL_UNPOOLED automáticamente (la URL sin "-pooler").
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum UserRole {
