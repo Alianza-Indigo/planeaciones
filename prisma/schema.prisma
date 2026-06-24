@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MembershipStatus {
+  FREE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PlanType {
+  FREE
+  MONTHLY
+  ANNUAL
+  LIFETIME
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+  CANCELED
+}
+
+enum GenerationStatus {
+  STARTED
+  COMPLETED
+  FAILED
+}
+
+enum PromptKind {
+  PLANNING
+  MATERIALS
+  TEST
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String?
+  email           String?          @unique
+  emailVerified   DateTime?
+  image           String?
+  role            UserRole         @default(USER)
+  googleSubject   String?          @unique
+  accounts        Account[]
+  sessions        Session[]
+  membership      Membership?
+  payments        Payment[]
+  generations     Generation[]
+  drafts          PlanningDraft[]
+  createdPrompts  PromptTemplate[] @relation("PromptAuthor")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Membership {
+  id                   String           @id @default(cuid())
+  userId               String           @unique
+  plan                 PlanType         @default(FREE)
+  status               MembershipStatus @default(FREE)
+  currentPeriodEndsAt  DateTime?
+  generationLimit      Int              @default(3)
+  generationsUsed      Int              @default(0)
+  mercadoPagoPayerId   String?
+  mercadoPagoProductId String?
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  userId                String
+  provider              String        @default("mercadopago")
+  providerPaymentId     String?       @unique
+  providerPreferenceId  String?
+  status                PaymentStatus @default(PENDING)
+  amountCents           Int
+  currency              String        @default("MXN")
+  rawPayload            Json?
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model PromptTemplate {
+  id          String     @id @default(cuid())
+  kind        PromptKind @default(PLANNING)
+  name        String
+  version     Int
+  body        String     @db.Text
+  notes       String?    @db.Text
+  isActive    Boolean    @default(false)
+  createdById String?
+  createdBy   User?      @relation("PromptAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  generations Generation[]
+
+  @@unique([kind, version])
+  @@index([kind, isActive])
+}
+
+model Generation {
+  id                 String           @id @default(cuid())
+  userId             String
+  promptTemplateId   String?
+  status             GenerationStatus @default(STARTED)
+  input              Json
+  outputPreview      String?          @db.Text
+  errorMessage       String?          @db.Text
+  providerRequestId  String?
+  model              String?
+  tokensIn           Int?
+  tokensOut          Int?
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promptTemplate     PromptTemplate?  @relation(fields: [promptTemplateId], references: [id], onDelete: SetNull)
+  draft              PlanningDraft?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model PlanningDraft {
+  id             String     @id @default(cuid())
+  userId         String
+  generationId   String     @unique
+  title          String
+  content        String     @db.Text
+  metadata       Json?
+  exportedDocId  String?
+  exportedDocUrl String?
+  expiresAt      DateTime
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation     Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
