@@ -13,6 +13,7 @@ const serverEnvSchema = z.object({
   MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
   MERCADOPAGO_SUCCESS_URL: z.string().url(),
   MERCADOPAGO_FAILURE_URL: z.string().url(),
+  PUBLIC_BASE_URL: z.string().url().optional(),
   ADMIN_EMAILS: z.string().default(""),
   DRAFT_TTL_HOURS: z.coerce.number().int().positive().default(24),
   CRON_SECRET: z.string().optional(),
@@ -28,6 +29,7 @@ const mercadoPagoEnvSchema = serverEnvSchema.pick({
   MERCADOPAGO_ACCESS_TOKEN: true,
   MERCADOPAGO_SUCCESS_URL: true,
   MERCADOPAGO_FAILURE_URL: true,
+  PUBLIC_BASE_URL: true,
 });
 
 const draftEnvSchema = serverEnvSchema.pick({

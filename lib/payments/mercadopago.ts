@@ -37,6 +37,12 @@ export async function createMercadoPagoPreference(input: CheckoutPreferenceInput
         pending: env.MERCADOPAGO_SUCCESS_URL,
       },
       auto_return: "approved",
+      // Mercado Pago notificará el resultado del pago a este endpoint. Requiere
+      // PUBLIC_BASE_URL (dominio público); si no está, se omite y debe
+      // configurarse el webhook en el panel de Mercado Pago.
+      ...(env.PUBLIC_BASE_URL
+        ? { notification_url: `${env.PUBLIC_BASE_URL}/api/payments/webhook` }
+        : {}),
     }),
   });
 
