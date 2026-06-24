@@ -1,45 +1,10 @@
-import crypto from "node:crypto";
-
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getMercadoPagoPayment } from "@/lib/payments/mercadopago";
+import { verifyMercadoPagoSignature } from "@/lib/payments/verify-signature";
 
 export const runtime = "nodejs";
-
-// Valida la firma del webhook de Mercado Pago (header x-signature) cuando hay
-// MERCADOPAGO_WEBHOOK_SECRET configurado. Formato del header: "ts=...,v1=...".
-// El manifiesto firmado es: id:<dataId>;request-id:<x-request-id>;ts:<ts>;
-function verifySignature(request: Request, dataId: string | null): boolean {
-  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  if (!secret) {
-    return true; // sin secreto configurado, no se valida (entornos de prueba)
-  }
-
-  const signature = request.headers.get("x-signature");
-  if (!signature || !dataId) {
-    return false;
-  }
-
-  const parts = Object.fromEntries(
-    signature.split(",").map((part) => part.split("=").map((value) => value.trim()) as [string, string]),
-  );
-  const ts = parts.ts;
-  const v1 = parts.v1;
-  if (!ts || !v1) {
-    return false;
-  }
-
-  const requestId = request.headers.get("x-request-id") ?? "";
-  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-  const expected = crypto.createHmac("sha256", secret).update(manifest).digest("hex");
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
-  } catch {
-    return false;
-  }
-}
 
 function addOneYear(from: Date): Date {
   const date = new Date(from);
@@ -59,7 +24,13 @@ export async function POST(request: Request) {
   const dataId =
     payload.data?.id ?? searchParams.get("data.id") ?? searchParams.get("id") ?? null;
 
-  if (!verifySignature(request, dataId)) {
+  const signatureValid = verifyMercadoPagoSignature({
+    secret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+    xSignature: request.headers.get("x-signature"),
+    xRequestId: request.headers.get("x-request-id"),
+    dataId,
+  });
+  if (!signatureValid) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
   }
 
