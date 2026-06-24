@@ -1,5 +1,29 @@
 import { z } from "zod";
 
+export const condicionNeuroinclusiva = z.enum([
+  "tdah",
+  "tea",
+  "dislexia",
+  "discalculia",
+  "disfasia",
+  "discapacidad_intelectual",
+  "hipersensibilidad_sensorial",
+  "altas_capacidades",
+  "dificultades_motoras",
+  "ansiedad_escolar",
+  "otra",
+]);
+
+export type CondicionNeuroinclusiva = z.infer<typeof condicionNeuroinclusiva>;
+
+export const neuroinclusividadSchema = z
+  .object({
+    activa: z.boolean().default(false),
+    condiciones: z.array(condicionNeuroinclusiva).default([]),
+    otraDescripcion: z.string().optional(),
+  })
+  .default({ activa: false, condiciones: [] });
+
 export const planningInputSchema = z.object({
   nombreDocente: z.string().min(1),
   nombreEscuela: z.string().min(1),
@@ -16,6 +40,13 @@ export const planningInputSchema = z.object({
   contextoGrupo: z.string().optional(),
   necesidades: z.string().optional(),
   materialesDisponibles: z.string().optional(),
+  // secuencial = una sesión por contenido; proyecto = integrar campos en torno al tema.
+  modalidad: z.enum(["secuencial", "proyecto"]).default("secuencial"),
+  // compacto  = 1-2 páginas, solo estructura esencial, sin scripts de facilitador
+  // estandar  = scripts moderados en forma de guía
+  // detallado = scripts literales y adaptaciones por momento de la actividad
+  nivelDetalle: z.enum(["compacto", "estandar", "detallado"]).default("estandar"),
+  neuroinclusividad: neuroinclusividadSchema,
 });
 
 export type PlanningInput = z.infer<typeof planningInputSchema>;
