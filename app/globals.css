@@ -4,6 +4,7 @@
   --indigo-soft:#3D4499;
   --accent:     #7C6FCD;
   --glow:       #A99EE8;
+  --gold:       #E7B85C;
   --surface:    #13162E;
   --card:       #1A1E3D;
   --border:     rgba(124, 111, 205, 0.18);
@@ -175,8 +176,12 @@ p {
   color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
   font-weight: 500;
+  font-family: inherit;
   transition: all 0.15s;
   border: 1px solid transparent;
+  background: none;
+  width: 100%;
+  text-align: left;
   user-select: none;
 }
 
@@ -186,9 +191,14 @@ p {
 }
 
 .nav-item[data-active="true"] {
-  background: rgba(124, 111, 205, 0.2);
-  border-color: rgba(124, 111, 205, 0.3);
+  background: rgba(231, 184, 92, 0.12);
+  border-color: var(--gold);
   color: white;
+}
+
+.nav-item[data-active="true"] svg {
+  opacity: 1;
+  color: var(--gold);
 }
 
 .nav-item svg {
