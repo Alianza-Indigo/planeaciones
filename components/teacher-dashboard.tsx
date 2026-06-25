@@ -34,6 +34,30 @@ const GRADOS_POR_NIVEL: Record<NivelEdu, string[]> = {
   Secundaria: ["1°", "2°", "3°"],
 };
 
+// El catálogo NEM (data/con-plan.json) mezcla, por grado, tres grupos de campos:
+// los oficiales de Primaria, las materias de Secundaria y las variantes de
+// Preescolar. Filtramos por nivel para mostrar solo los que correspondan.
+const CAMPOS_PRIMARIA = [
+  "LENGUAJES",
+  "SABERES Y PENSAMIENTO CIENTÍFICO",
+  "ÉTICA, NATURALEZA Y SOCIEDADES",
+  "DE LO HUMANO Y LO COMUNITARIO",
+];
+
+const CAMPOS_PREESCOLAR = [
+  "LENGUAJE",
+  "SABERES PENSAMIENTO CIENTÍFICO",
+  "ETICA NATURALEZA SOCIEDADES",
+  "HUMANO Y COMUNITARIO",
+];
+
+function filtrarCamposPorNivel(campos: string[], nivel: NivelEdu): string[] {
+  if (nivel === "Preescolar") return campos.filter((c) => CAMPOS_PREESCOLAR.includes(c));
+  if (nivel === "Primaria") return campos.filter((c) => CAMPOS_PRIMARIA.includes(c));
+  // Secundaria: todo lo que no sea campo formativo de Primaria ni de Preescolar.
+  return campos.filter((c) => !CAMPOS_PRIMARIA.includes(c) && !CAMPOS_PREESCOLAR.includes(c));
+}
+
 const ESTRATEGIAS = [
   "Rúbrica",
   "Lista de cotejo",
@@ -255,6 +279,12 @@ export function TeacherDashboard() {
 
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
+
+  // Campos formativos visibles según el nivel educativo seleccionado.
+  const camposFiltrados = useMemo(
+    () => filtrarCamposPorNivel(camposDisponibles, nivel),
+    [camposDisponibles, nivel],
+  );
 
   // El grado seleccionado debe existir en el nivel actual.
   useEffect(() => {
@@ -523,7 +553,7 @@ export function TeacherDashboard() {
                 setSesiones,
                 duracion,
                 setDuracion,
-                camposDisponibles,
+                camposDisponibles: camposFiltrados,
                 campo,
                 cargarContenidos,
                 contenidos,
