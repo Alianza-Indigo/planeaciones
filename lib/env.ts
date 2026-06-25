@@ -6,9 +6,8 @@ const serverEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
-  ALIANZA_INDIGO_API_URL: z.string().url(),
-  ALIANZA_INDIGO_API_KEY: z.string().min(1),
-  ALIANZA_INDIGO_MODEL: z.string().default("default"),
+  GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL: z.string().default("gemini-3.1-flash-lite"),
   MERCADOPAGO_ACCESS_TOKEN: z.string().min(1),
   MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
   MERCADOPAGO_SUCCESS_URL: z.string().url(),
@@ -19,10 +18,9 @@ const serverEnvSchema = z.object({
   CRON_SECRET: z.string().optional(),
 });
 
-const alianzaEnvSchema = serverEnvSchema.pick({
-  ALIANZA_INDIGO_API_URL: true,
-  ALIANZA_INDIGO_API_KEY: true,
-  ALIANZA_INDIGO_MODEL: true,
+const geminiEnvSchema = serverEnvSchema.pick({
+  GEMINI_API_KEY: true,
+  GEMINI_MODEL: true,
 });
 
 const mercadoPagoEnvSchema = serverEnvSchema.pick({
@@ -40,8 +38,8 @@ export function getServerEnv() {
   return serverEnvSchema.parse(process.env);
 }
 
-export function getAlianzaEnv() {
-  return alianzaEnvSchema.parse(process.env);
+export function getGeminiEnv() {
+  return geminiEnvSchema.parse(process.env);
 }
 
 export function getMercadoPagoEnv() {
