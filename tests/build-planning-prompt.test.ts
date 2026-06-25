@@ -76,12 +76,12 @@ describe("buildPlanningPrompt — neuroinclusividad", () => {
 describe("buildPlanningPrompt — modalidad y template", () => {
   it("modalidad proyecto se refleja en los datos", () => {
     const prompt = buildPlanningPrompt(makeInput({ modalidad: "proyecto" }));
-    expect(prompt).toContain("Modalidad: Por proyecto");
+    expect(prompt).toContain("Tipo de Planeacion: Por proyecto");
   });
 
   it("modalidad secuencial por defecto", () => {
     const prompt = buildPlanningPrompt(makeInput());
-    expect(prompt).toContain("Modalidad: Secuencial");
+    expect(prompt).toContain("Tipo de Planeacion: Secuencial");
   });
 
   it("respeta el template recibido (precedencia del prompt en DB)", () => {
