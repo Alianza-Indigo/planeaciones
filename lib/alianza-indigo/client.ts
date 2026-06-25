@@ -18,7 +18,7 @@ export async function callGemini(prompt: string): Promise<GeminiResult> {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 65536,
-        temperature: 0.2,
+        temperature: 0.4,
       },
     }),
   });

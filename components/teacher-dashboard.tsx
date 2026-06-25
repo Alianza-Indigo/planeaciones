@@ -405,6 +405,12 @@ function esUrl(texto: string): boolean {
   return /^https?:\/\/\S+$/i.test(texto.trim());
 }
 
+// Quita cualquier preámbulo (validaciones/blindajes filtrados) antes del documento.
+function limpiarDocumento(texto: string): string {
+  const i = texto.search(/PLANEACI[OÓ]N\s+DID[AÁ]CTICA/i);
+  return i > 0 ? texto.slice(i).trim() : texto.trim();
+}
+
 // Materiales estructurados → texto plano (para descarga TXT).
 function materialesAtexto(data: MaterialesData): string {
   const partes: string[] = ["", "==============================", "MATERIALES POR SESIÓN", "=============================="];
@@ -646,7 +652,7 @@ export function TeacherDashboard() {
   // Carga una planeación: separa el bloque de materiales del texto visible.
   function cargarPlaneacion(id: string, title: string, rawContent: string) {
     const { texto, materiales } = splitMateriales(rawContent);
-    setDraft({ id, title, content: texto });
+    setDraft({ id, title, content: limpiarDocumento(texto) });
     setMaterialesData(materiales);
     setDriveUrl(null);
     setPreviewStatus("");

@@ -513,6 +513,7 @@ INSTRUCCIONES DE EJECUCION OBLIGATORIAS (BLINDAJE)
 - Toda actividad/objetivo/criterio debe vincularse explicitamente a los PDA proporcionados.
 - FORMATO CRITICO: Genera TEXTO PLANO limpio y legible, sin caracteres especiales.
 - Responde unicamente con el documento generado (sin prologos ni epilogos).
+- El documento DEBE COMENZAR exactamente con la linea "PLANEACION DIDACTICA". NO copies en tu respuesta las validaciones, checklists, ni el texto de los blindajes/instrucciones: son indicaciones para ti, NO son parte del documento.
 
 Rol del Modelo: Eres un Especialista en Planificacion Educativa de la Nueva Escuela Mexicana (NEM).
 
@@ -596,11 +597,11 @@ EVALUACION SUMATIVA DEL PROYECTO
 
 MATERIALES POR SESION (BLOQUE OBLIGATORIO AL FINAL DE TODO)
 -----------------------------------------------------------
-Después del documento, agrega los materiales de CADA sesión, separados por destinatario (docente/alumno), con su CONTENIDO COMPLETO listo para usar. Reglas del contenido:
-- Si el material es una lectura, cuento o historia: escribe el TEXTO ÍNTEGRO (completo, no un resumen) en el campo "contenido".
+Después del documento, agrega los materiales de CADA sesión (al menos 2 por sesión cuando sea pertinente, cubriendo docente y alumno), separados por destinatario, con su CONTENIDO COMPLETO listo para usar y de ALTA CALIDAD. Reglas del contenido:
+- Si el material es una lectura, cuento o historia: escribe un cuento ORIGINAL y COMPLETO de 250 a 450 palabras, con inicio, nudo y desenlace claros, personajes con nombre, diálogos, y vocabulario adecuado al grado; debe estar vinculado al tema y al PDA, y modelar el aprendizaje esperado. PROHIBIDO entregar 1-3 oraciones, un resumen o un esbozo.
 - Si es un video: en "contenido" pon el título y el URL real de YouTube en español.
-- Si es un organizador gráfico, tarjeta o banco de palabras: incluye su contenido detallado en "contenido".
-- Si es un instrumento de evaluación: inclúyelo completo (lista de cotejo o rúbrica) en "contenido".
+- Si es un organizador gráfico, tarjeta o banco de palabras: incluye su contenido detallado y completo en "contenido" (las palabras, las preguntas, las columnas reales).
+- Si es un instrumento de evaluación: inclúyelo completo (lista de cotejo o rúbrica con sus indicadores/criterios).
 - Indica "cantidad" (ej: "1 por alumno", "1 por equipo de 4").
 - Atiende los perfiles neurológicos del grupo: ${perfiles}.
 
