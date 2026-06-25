@@ -4,6 +4,7 @@ import { PaymentButton } from "@/components/payment-button";
 import { TeacherShell } from "@/components/teacher-shell";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { FREE_GENERATION_LIMIT } from "@/lib/membership";
 
 export const runtime = "nodejs";
 
@@ -34,9 +35,10 @@ export default async function AccountPage() {
 
   const plan = membership?.plan ?? "FREE";
   const used = membership?.generationsUsed ?? 0;
-  const limit = membership?.generationLimit ?? 3;
   const periodEnd = membership?.currentPeriodEndsAt ?? null;
   const isActive = membership?.status === "ACTIVE" && (!periodEnd || periodEnd > new Date());
+  // Usuarios gratuitos: el límite efectivo es el del plan gratuito (pruebas: 100).
+  const limit = isActive ? membership?.generationLimit ?? 0 : FREE_GENERATION_LIMIT;
   const ilimitado = isActive && limit >= 999999;
 
   return (

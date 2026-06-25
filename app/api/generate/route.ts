@@ -9,6 +9,7 @@ import {
   defaultPlanningPromptTemplate,
 } from "@/lib/generation/build-planning-prompt";
 import { planningInputSchema } from "@/lib/generation/types";
+import { FREE_GENERATION_LIMIT } from "@/lib/membership";
 
 export const runtime = "nodejs";
 
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
   const canGenerate =
     !membership ||
     membership.status === "ACTIVE" ||
-    membership.generationsUsed < membership.generationLimit;
+    membership.generationsUsed < FREE_GENERATION_LIMIT;
 
   if (!canGenerate) {
     return NextResponse.json(
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
     await prisma.membership.upsert({
       where: { userId: session.user.id },
-      create: { userId: session.user.id, generationsUsed: 1 },
+      create: { userId: session.user.id, generationsUsed: 1, generationLimit: FREE_GENERATION_LIMIT },
       update: { generationsUsed: { increment: 1 } },
     });
 

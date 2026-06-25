@@ -79,8 +79,8 @@ describe("POST /api/generate", () => {
   it("bloquea con 403 al usuario FREE que alcanzó su límite (no llama al LLM)", async () => {
     prismaMock.membership.findUnique.mockResolvedValue({
       status: "FREE",
-      generationsUsed: 3,
-      generationLimit: 3,
+      generationsUsed: 100,
+      generationLimit: 100,
     });
     const res = await call(validBody);
     expect(res.status).toBe(403);

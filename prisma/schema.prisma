@@ -111,7 +111,7 @@ model Membership {
   plan                 PlanType         @default(FREE)
   status               MembershipStatus @default(FREE)
   currentPeriodEndsAt  DateTime?
-  generationLimit      Int              @default(3)
+  generationLimit      Int              @default(100)
   generationsUsed      Int              @default(0)
   mercadoPagoPayerId   String?
   mercadoPagoProductId String?
