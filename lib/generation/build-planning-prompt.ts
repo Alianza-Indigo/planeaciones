@@ -300,8 +300,30 @@ Para CADA condición listada, incluir en CADA sesión:
 - Un material de apoyo específico si aplica`;
 }
 
+// Perfiles neurológicos seleccionados por el docente (o los base del motor).
+function perfilesNeurologicos(input: PlanningInput): string {
+  const ni = input.neuroinclusividad;
+  if (!ni.activa || ni.condiciones.length === 0) {
+    return "TEA y TDA/TDAH (perfiles base del motor)";
+  }
+  const labels = ni.condiciones
+    .filter((c): c is Exclude<CondicionNeuroinclusiva, "otra"> => c !== "otra")
+    .map((c) => condicionesLabels[c]);
+  if (ni.condiciones.includes("otra") && ni.otraDescripcion) {
+    labels.push(`Otra: ${ni.otraDescripcion}`);
+  }
+  return labels.join("; ");
+}
+
 // Esqueleto por sesión (bucle verbatim del motor legacy).
-function buildSesion(i: number, inicioMin: number, desarrolloMin: number, cierreMin: number, pdaStr: string) {
+function buildSesion(
+  i: number,
+  inicioMin: number,
+  desarrolloMin: number,
+  cierreMin: number,
+  pdaStr: string,
+  perfiles: string,
+) {
   return `SESION ${i}: [Titulo unico y descriptivo de la sesion]
 
 Desarrollo de Actividades:
@@ -327,12 +349,14 @@ Proposito: [Construccion del aprendizaje]
 Producto esperado: [Resultado tangible especifico]
 
 Adaptaciones Neurodivergentes para la actividad específica:
-Analizar exactamente qué debe hacer el estudiante en esta actividad y identificar 3 momentos problemáticos:
+PERFILES NEUROLÓGICOS DEL GRUPO A ATENDER EN ESTA SESIÓN (OBLIGATORIO): ${perfiles}.
+Para CADA perfil listado arriba, generar adaptaciones específicas en esta sesión (no genéricas).
+Analizar exactamente qué debe hacer el estudiante en esta actividad y, considerando esos perfiles, identificar 3 momentos problemáticos:
 -1.- **Momento específico donde falla la función ejecutiva:** [ej: cuando debe decidir QUÉ hobbies dibujar de todos los posibles]
 -2.- **Momento específico de sobrecarga sensorial:** [ej: cuando 30 niños hablan mientras él intenta dibujar]
 -3.- **Momento específico de dificultad comunicativa:** [ej: cuando debe explicar POR QUÉ ese hobby le gusta]
 
-Crear soluciones específicas para cada momento:
+Crear soluciones específicas para cada momento, diferenciadas por perfil (${perfiles}):
 -1.- [Herramienta específica con números exactos]
 -2.- [Modificación específica del timing/entorno]
 -3.- [Estructura específica de apoyo comunicativo]
@@ -433,10 +457,12 @@ Incluir al final del documento:
 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas segun lo solicitado.'
 `;
 
+  const perfiles = perfilesNeurologicos(input);
+
   // Bucle de sesiones (verbatim)
   let sesionesText = "";
   for (let i = 1; i <= sesiones; i++) {
-    sesionesText += `${buildSesion(i, inicioMin, desarrolloMin, cierreMin, pdaStr)}\n`;
+    sesionesText += `${buildSesion(i, inicioMin, desarrolloMin, cierreMin, pdaStr, perfiles)}\n`;
   }
 
   // Evaluación formativa condicional (verbatim)
@@ -566,5 +592,20 @@ EVALUACION SUMATIVA DEL PROYECTO
 - Producto Final: [Descripcion del producto esperado vinculado a ${contenidosStr}]
 - Criterios de Evaluacion: [Criterios especificos asociados a ${pdaStr}]
 - Instrumentos: [Lista de instrumentos a utilizar]
+
+MATERIALES COMPLEMENTARIOS (APENDICE OBLIGATORIO - NO OMITIR)
+-------------------------------------------------------------
+Generar AQUI, de forma completa, TODOS los materiales mencionados en las sesiones. Este apéndice es obligatorio y NO debe omitirse ni resumirse. Incluir, segun corresponda:
+- Textos y cuentos completos mencionados (texto íntegro, no resumen)
+- Organizadores gráficos descritos con su formato visual
+- Tarjetas de apoyo con su contenido específico
+- Bancos de palabras organizados por categorías
+- Instrumentos de evaluación detallados (listas de cotejo y rúbricas completas)
+- Instrucciones de uso para el docente
+- Para cada imagen sugerida: el prompt exacto para generarla
+- Para cada video sugerido: el URL de YouTube en español
+- Adaptaciones imprimibles por perfil neurológico del grupo: ${perfiles}
+
+Cierre con: 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas y el apéndice de materiales complementarios.'
 `;
 }
