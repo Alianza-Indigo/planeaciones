@@ -513,7 +513,8 @@ INSTRUCCIONES DE EJECUCION OBLIGATORIAS (BLINDAJE)
 - Toda actividad/objetivo/criterio debe vincularse explicitamente a los PDA proporcionados.
 - FORMATO CRITICO: Genera TEXTO PLANO limpio y legible, sin caracteres especiales.
 - Responde unicamente con el documento generado (sin prologos ni epilogos).
-- El documento DEBE COMENZAR exactamente con la linea "PLANEACION DIDACTICA". NO copies en tu respuesta las validaciones, checklists, ni el texto de los blindajes/instrucciones: son indicaciones para ti, NO son parte del documento.
+- Empieza tu respuesta con la linea "PLANEACION DIDACTICA". Lo unico que NO debes copiar son las casillas de VALIDACION/CHECKLIST de los blindajes (las lineas con [ ] o [x]); todo lo demas del documento SI va.
+- OBLIGATORIO: al final de TODO incluye el bloque MATERIALES_JSON completo, tal como se especifica mas abajo. Es parte de la salida, NO lo omitas.
 
 Rol del Modelo: Eres un Especialista en Planificacion Educativa de la Nueva Escuela Mexicana (NEM).
 
