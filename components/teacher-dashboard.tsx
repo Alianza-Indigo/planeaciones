@@ -205,6 +205,81 @@ function parseSesiones(content: string): Sesion[] {
   return sesiones;
 }
 
+// Planeación de ejemplo para revisar el diseño de las pestañas sin generar.
+const DEMO_DRAFT = {
+  id: "demo",
+  title: "Conociendo y escribiendo nuestros nombres",
+  content: `# Planeación: Conociendo y escribiendo nuestros nombres
+
+**Grado:** 2° Primaria · **Campo:** Lenguajes · **Modalidad:** Secuencial · 3 sesiones de 50 min
+
+## Sesión 1 · Conociendo y Escribiendo Nuestros Nombres
+
+### Inicio (10 min)
+- Saludo en semicírculo. El docente muestra su propio nombre en una tarjeta grande.
+- Activar conocimientos previos: ¿quién eligió tu nombre?, ¿por qué es importante?
+
+### Desarrollo (30 min)
+- Hoja de trabajo "Mi Nombre y el de Mi Familia": el estudiante escribe su nombre completo y el de 4 familiares.
+- Subraya las letras repetidas y dibuja un retrato de cada uno.
+
+### Cierre (10 min)
+- Algunos estudiantes comparten un nombre de su familia y una letra subrayada.
+- Reflexión metacognitiva sobre lo aprendido.
+
+**Adaptaciones neurodivergentes:**
+- **Función ejecutiva:** tarjeta de apoyo con 5 categorías de familiares para reducir la carga de memoria.
+- **Sobrecarga sensorial:** rincón tranquilo o audífonos de cancelación de ruido.
+- **Comunicación:** tarjetas de letras para señalar en lugar de explicación oral.
+
+## Sesión 2 · Descubriendo las Letras Similares
+
+### Inicio (10 min)
+- Retomar las hojas de la sesión anterior y comentar qué letras parecieron interesantes.
+
+### Desarrollo (30 min)
+- Juego de detectives de letras en equipos: comparar nombres con letras similares (c/s/z, b/v).
+- Registrar observaciones en la hoja "Detectives de Letras".
+
+### Cierre (10 min)
+- Cada equipo comparte una observación. El docente muestra dos tarjetas y pregunta por sus diferencias.
+
+**Adaptaciones neurodivergentes:**
+- **Función ejecutiva:** tarjetas de nombres pre-seleccionados.
+- **Interacción grupal:** rol de "observador de letras" con menos interacción verbal.
+
+## Sesión 3 · Creando Nuestro Mural de Nombres
+
+### Inicio (10 min)
+- Presentar el pliego de papel "Nuestro Mural de Nombres".
+
+### Desarrollo (30 min)
+- Cada estudiante escribe su nombre en una tarjeta, la decora y la pega en el mural.
+- Observar las letras repetidas en el mural colectivo.
+
+### Cierre (10 min)
+- Observación colectiva del mural y reflexión sobre escribir correctamente el nombre de los demás.
+
+**Adaptaciones neurodivergentes:**
+- **Sobrecarga sensorial:** estación de pegado para 2-3 estudiantes con temporizador visual.
+- **Comunicación:** tarjetas de sentimientos/emojis para expresar sin verbalizar.
+
+## Materiales
+
+- Cuento "El Nombre de Todos" — historia sobre Ana que descubre la importancia de su nombre. Leer al inicio de la Sesión 1.
+- Juego de Tarjetas de Letras — set plastificado con el abecedario en mayúsculas y minúsculas.
+- Hoja "Mi Nombre y el de Mi Familia" — formato con espacio para 4 familiares y dibujo. Una copia por estudiante.
+- Hoja "Detectives de Letras" — tabla comparativa de pares de nombres. Una copia por equipo.
+- Lista de Cotejo — 5 indicadores vinculados a los PDA.
+- Rúbrica del Mural de Nombres — 5 criterios en 3 niveles de desempeño.
+
+## Evaluación
+
+- **Formativa:** lista de cotejo durante las tres sesiones.
+- **Sumativa:** rúbrica del mural de nombres al cierre.
+`,
+};
+
 function parseMateriales(content: string): string[] {
   const lines = content.split("\n");
   const items: string[] = [];
@@ -409,6 +484,19 @@ export function TeacherDashboard() {
     setSidebarOpen(false);
   }
 
+  // Carga una planeación de ejemplo para revisar el diseño sin generar.
+  function cargarEjemplo() {
+    setDraft(DEMO_DRAFT);
+    setSesiones(3);
+    setDuracion(50);
+    setModalidad("secuencial");
+    setPreviewStatus("");
+    setTab("planeacion");
+    setSidebarOpen(false);
+  }
+
+  const esDemo = draft?.id === "demo";
+
   async function generar() {
     setError(null);
     setUpgrade(false);
@@ -484,6 +572,10 @@ export function TeacherDashboard() {
 
   async function savePreview() {
     if (!draft) return;
+    if (esDemo) {
+      setPreviewStatus("Es una planeación de ejemplo; genera una real para guardar.");
+      return;
+    }
     setPreviewStatus("Guardando…");
     await fetch(`/api/drafts/${draft.id}`, {
       method: "PATCH",
@@ -495,6 +587,10 @@ export function TeacherDashboard() {
 
   async function exportToDrive() {
     if (!draft) return;
+    if (esDemo) {
+      setPreviewStatus("Es una planeación de ejemplo; genera una real para exportar.");
+      return;
+    }
     setPreviewStatus("Enviando a Google Drive…");
     const response = await fetch("/api/drive/export", {
       method: "POST",
@@ -1015,6 +1111,10 @@ export function TeacherDashboard() {
                   {loading ? <Loader2 size={18} className="spin" /> : <Sparkles size={18} />}
                   {loading ? "Generando…" : "Generar Planeación"}
                 </button>
+                <button className="button secondary" type="button" onClick={cargarEjemplo}>
+                  <FileText size={16} />
+                  Ver ejemplo
+                </button>
                 <p className="cta-note">
                   Los recuadros de salida son editables. Puedes copiar cada sección o descargar la planeación.
                 </p>
@@ -1023,10 +1123,17 @@ export function TeacherDashboard() {
           ) : null}
 
           {tab === "planeacion" ? (
-            <PlaneacionView draft={draft} sesiones={sesiones} duracion={duracion} modalidad={modalidad} onGo={go} />
+            <PlaneacionView
+              draft={draft}
+              sesiones={sesiones}
+              duracion={duracion}
+              modalidad={modalidad}
+              onGo={go}
+              onDemo={cargarEjemplo}
+            />
           ) : null}
 
-          {tab === "materiales" ? <MaterialesView draft={draft} onGo={go} /> : null}
+          {tab === "materiales" ? <MaterialesView draft={draft} onGo={go} onDemo={cargarEjemplo} /> : null}
 
           {tab === "preview" ? (
             <PreviewView
@@ -1040,6 +1147,7 @@ export function TeacherDashboard() {
               onDownload={downloadMarkdown}
               onDrive={exportToDrive}
               onGo={go}
+              onDemo={cargarEjemplo}
             />
           ) : null}
         </main>
@@ -1063,12 +1171,14 @@ function PlaneacionView({
   duracion,
   modalidad,
   onGo,
+  onDemo,
 }: {
   draft: { title: string; content: string } | null;
   sesiones: number;
   duracion: number;
   modalidad: "secuencial" | "proyecto";
   onGo: (tab: Tab) => void;
+  onDemo: () => void;
 }) {
   const [openIndex, setOpenIndex] = useState(0);
 
@@ -1077,8 +1187,9 @@ function PlaneacionView({
       <div className="page-inner wide">
         <EmptyState
           title="Aún no hay planeación"
-          text="Genera una planeación desde la pestaña Generación para verla aquí organizada por sesiones."
+          text="Genera una planeación desde la pestaña Generación, o carga un ejemplo para revisar el diseño."
           onGo={onGo}
+          onDemo={onDemo}
         />
       </div>
     );
@@ -1124,7 +1235,15 @@ function PlaneacionView({
 }
 
 // ─────────────────────────── Materiales ───────────────────────────
-function MaterialesView({ draft, onGo }: { draft: { content: string } | null; onGo: (tab: Tab) => void }) {
+function MaterialesView({
+  draft,
+  onGo,
+  onDemo,
+}: {
+  draft: { content: string } | null;
+  onGo: (tab: Tab) => void;
+  onDemo: () => void;
+}) {
   if (!draft) {
     return (
       <div className="page-inner wide">
@@ -1132,6 +1251,7 @@ function MaterialesView({ draft, onGo }: { draft: { content: string } | null; on
           title="Aún no hay materiales"
           text="Cuando generes una planeación, los materiales y recursos sugeridos aparecerán aquí."
           onGo={onGo}
+          onDemo={onDemo}
         />
       </div>
     );
@@ -1178,6 +1298,7 @@ function PreviewView({
   onDownload,
   onDrive,
   onGo,
+  onDemo,
 }: {
   draft: { id: string; title: string; content: string } | null;
   setDraft: (d: { id: string; title: string; content: string }) => void;
@@ -1189,14 +1310,16 @@ function PreviewView({
   onDownload: () => void;
   onDrive: () => void;
   onGo: (tab: Tab) => void;
+  onDemo: () => void;
 }) {
   if (!draft) {
     return (
       <div className="page-inner wide">
         <EmptyState
           title="Sin contenido para previsualizar"
-          text="La planeación generada aparecerá aquí como texto editable. Genera una primero."
+          text="La planeación generada aparecerá aquí como texto editable. Genera una o carga un ejemplo."
           onGo={onGo}
+          onDemo={onDemo}
         />
       </div>
     );
@@ -1243,16 +1366,34 @@ function PreviewView({
   );
 }
 
-function EmptyState({ title, text, onGo }: { title: string; text: string; onGo: (tab: Tab) => void }) {
+function EmptyState({
+  title,
+  text,
+  onGo,
+  onDemo,
+}: {
+  title: string;
+  text: string;
+  onGo: (tab: Tab) => void;
+  onDemo?: () => void;
+}) {
   return (
     <div className="empty-state">
       <AlertTriangle size={40} />
       <h3>{title}</h3>
       <p>{text}</p>
-      <button className="button secondary" type="button" style={{ marginTop: 16 }} onClick={() => onGo("generacion")}>
-        <Sparkles size={16} />
-        Ir a Generación
-      </button>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
+        <button className="button primary" type="button" onClick={() => onGo("generacion")}>
+          <Sparkles size={16} />
+          Ir a Generación
+        </button>
+        {onDemo ? (
+          <button className="button secondary" type="button" onClick={onDemo}>
+            <FileText size={16} />
+            Ver ejemplo
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
