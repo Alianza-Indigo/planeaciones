@@ -8,6 +8,30 @@ function normalizeGrado(grado: string): string {
   return match ? match[0] : grado.trim();
 }
 
+// Una celda de PDA del catálogo puede contener varios PDA concatenados, ya sea
+// con marcadores "(1) … (2) …" o como oraciones separadas. Los descompone en
+// PDA individuales (réplica de la lógica del planner legacy).
+export function splitPDAs(pdaString: string): string[] {
+  if (!pdaString || typeof pdaString !== "string") return [];
+
+  if (pdaString.includes("(1)") || pdaString.includes("(2)")) {
+    return pdaString
+      .split(/\(\d+\)\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  const sentences = pdaString.split(/\.\s+(?=[A-Z])/).filter((sentence) => sentence.trim());
+  if (sentences.length > 1) {
+    return sentences.map((sentence) => {
+      const trimmed = sentence.trim();
+      return trimmed.endsWith(".") ? trimmed : `${trimmed}.`;
+    });
+  }
+
+  return [pdaString.trim()];
+}
+
 // Lista de grados disponibles en el catálogo, en orden.
 export function getGrados(): string[] {
   return Object.keys(loadCurriculumCatalog()).sort();
@@ -41,11 +65,12 @@ export function getContenidosByGradoAndCampo(grado: string, campo: string): Cont
     return [];
   }
 
-  return campoCatalog.contenidos.map((titulo) => ({
-    id: titulo,
-    titulo,
-    pda: campoCatalog.byContenido[titulo] ?? [],
-  }));
+  return campoCatalog.contenidos.map((titulo) => {
+    const raw = campoCatalog.byContenido[titulo] ?? [];
+    // Cada celda puede traer varios PDA compuestos: se separan y deduplican.
+    const pda = [...new Set(raw.flatMap(splitPDAs))];
+    return { id: titulo, titulo, pda };
+  });
 }
 
 // PDA asociados a un contenido. Busca el contenido (su texto es el id) en todo
@@ -57,7 +82,7 @@ export function getPDAByContenido(contenidoId: string): string[] {
     for (const campoCatalog of Object.values(gradoCatalog)) {
       const pda = campoCatalog.byContenido[contenidoId];
       if (pda) {
-        return pda;
+        return [...new Set(pda.flatMap(splitPDAs))];
       }
     }
   }

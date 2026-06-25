@@ -19,7 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { Contenido } from "@/lib/curriculum/types";
 
@@ -34,9 +34,13 @@ const GRADOS_POR_NIVEL: Record<NivelEdu, string[]> = {
   Secundaria: ["1°", "2°", "3°"],
 };
 
-// El catálogo NEM (data/con-plan.json) mezcla, por grado, tres grupos de campos:
-// los oficiales de Primaria, las materias de Secundaria y las variantes de
-// Preescolar. Filtramos por nivel para mostrar solo los que correspondan.
+// Campos de ciencias por nivel: son los únicos que en modalidad Secuencial
+// permiten elegir varios contenidos (el resto es de selección única).
+const CAMPO_CIENCIAS: Partial<Record<NivelEdu, string>> = {
+  Primaria: "SABERES Y PENSAMIENTO CIENTÍFICO",
+  Preescolar: "SABERES PENSAMIENTO CIENTÍFICO",
+};
+
 const CAMPOS_PRIMARIA = [
   "LENGUAJES",
   "SABERES Y PENSAMIENTO CIENTÍFICO",
@@ -54,7 +58,6 @@ const CAMPOS_PREESCOLAR = [
 function filtrarCamposPorNivel(campos: string[], nivel: NivelEdu): string[] {
   if (nivel === "Preescolar") return campos.filter((c) => CAMPOS_PREESCOLAR.includes(c));
   if (nivel === "Primaria") return campos.filter((c) => CAMPOS_PRIMARIA.includes(c));
-  // Secundaria: todo lo que no sea campo formativo de Primaria ni de Preescolar.
   return campos.filter((c) => !CAMPOS_PRIMARIA.includes(c) && !CAMPOS_PREESCOLAR.includes(c));
 }
 
@@ -91,6 +94,9 @@ const NIVELES_DETALLE: { value: "compacto" | "estandar" | "detallado"; label: st
   { value: "detallado", label: "Detallado" },
 ];
 
+const SEP = "";
+const keyOf = (campo: string, titulo: string) => `${campo}${SEP}${titulo}`;
+
 function toggle(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
@@ -99,13 +105,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-// Etiqueta de grado para el backend: "3°" + Primaria → "3 primaria".
 function buildGradoLabel(nivel: NivelEdu, grado: string): string {
   const digit = grado.replace(/\D/g, "");
   return `${digit} ${nivel.toLowerCase()}`;
 }
 
-// Fase NEM derivada del nivel y grado.
 function buildFase(nivel: NivelEdu, grado: string): string {
   const digit = Number(grado.replace(/\D/g, ""));
   if (nivel === "Preescolar") return "Fase 2";
@@ -117,10 +121,7 @@ function buildFase(nivel: NivelEdu, grado: string): string {
 
 // ── Markdown mínimo (sin dependencias) → HTML seguro ──
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function renderInline(text: string): string {
@@ -133,14 +134,12 @@ function renderMarkdown(md: string): string {
   const lines = md.split("\n");
   const out: string[] = [];
   let listType: "ul" | "ol" | null = null;
-
   const closeList = () => {
     if (listType) {
       out.push(`</${listType}>`);
       listType = null;
     }
   };
-
   for (const raw of lines) {
     const line = raw.trimEnd();
     if (!line.trim()) {
@@ -188,13 +187,11 @@ function renderMarkdown(md: string): string {
 
 type Sesion = { title: string; body: string };
 
-// Divide el markdown en sesiones detectando encabezados "Sesión N".
 function parseSesiones(content: string): Sesion[] {
   const lines = content.split("\n");
   const sesiones: Sesion[] = [];
   let current: Sesion | null = null;
   const headingRe = /^#{0,4}\s*\**\s*sesi[oó]n\s*\d+/i;
-
   for (const line of lines) {
     if (headingRe.test(line.trim())) {
       if (current) sesiones.push(current);
@@ -208,12 +205,10 @@ function parseSesiones(content: string): Sesion[] {
   return sesiones;
 }
 
-// Extrae elementos de listas que aparezcan bajo encabezados de "materiales".
 function parseMateriales(content: string): string[] {
   const lines = content.split("\n");
   const items: string[] = [];
   let capturing = false;
-
   for (const line of lines) {
     const trimmed = line.trim();
     const heading = trimmed.match(/^#{1,6}\s+(.*)$/);
@@ -232,7 +227,6 @@ function parseMateriales(content: string): string[] {
 export function TeacherDashboard() {
   const [tab, setTab] = useState<Tab>("generacion");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgrade, setUpgrade] = useState(false);
@@ -249,55 +243,83 @@ export function TeacherDashboard() {
   const [sesiones, setSesiones] = useState(6);
   const [duracion, setDuracion] = useState(50);
 
-  // Contenidos y procesos
+  // Campos y contenidos
   const [camposDisponibles, setCamposDisponibles] = useState<string[]>([]);
-  const [campo, setCampo] = useState("");
-  const [contenidos, setContenidos] = useState<Contenido[]>([]);
-  const [contenidosSel, setContenidosSel] = useState<string[]>([]);
+  const [campo, setCampo] = useState(""); // modalidad secuencial (campo único)
+  const [camposProyecto, setCamposProyecto] = useState<string[]>([]); // modalidad proyecto
+  const [contenidosPorCampo, setContenidosPorCampo] = useState<Record<string, Contenido[]>>({});
+  const [contenidosSel, setContenidosSel] = useState<string[]>([]); // keys campo\x01titulo
   const [pdaSel, setPdaSel] = useState<string[]>([]);
+
+  // Menús desplegables
+  const [camposOpen, setCamposOpen] = useState(false);
   const [contenidosOpen, setContenidosOpen] = useState(false);
   const [pdaOpen, setPdaOpen] = useState(false);
 
-  // Evaluación
+  // Evaluación / tema / neuroinclusividad
   const [estrategias, setEstrategias] = useState<string[]>(["Rúbrica", "Lista de cotejo"]);
-
-  // Tema y contexto
   const [proyecto, setProyecto] = useState("");
   const [contextoGrupo, setContextoGrupo] = useState("");
   const [materialesDisponibles, setMaterialesDisponibles] = useState("");
-
-  // Neuroinclusividad
   const [niActiva, setNiActiva] = useState(false);
   const [condiciones, setCondiciones] = useState<string[]>([]);
   const [otraDescripcion, setOtraDescripcion] = useState("");
   const [nivelDetalle, setNivelDetalle] = useState<"compacto" | "estandar" | "detallado">("estandar");
 
   // Resultado
-  const [draft, setDraft] = useState<{ id: string; title: string; content: string; expiresAt?: string } | null>(null);
+  const [draft, setDraft] = useState<{ id: string; title: string; content: string } | null>(null);
   const [previewStatus, setPreviewStatus] = useState("");
   const [copied, setCopied] = useState(false);
 
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
-
-  // Campos formativos visibles según el nivel educativo seleccionado.
   const camposFiltrados = useMemo(
     () => filtrarCamposPorNivel(camposDisponibles, nivel),
     [camposDisponibles, nivel],
   );
 
-  // El grado seleccionado debe existir en el nivel actual.
+  // Campos activos según la modalidad.
+  const camposActivos = useMemo(
+    () => (modalidad === "proyecto" ? camposProyecto : campo ? [campo] : []),
+    [modalidad, camposProyecto, campo],
+  );
+  const camposActivosKey = camposActivos.join("|");
+
+  // En Secuencial, fuera del campo de ciencias, el contenido es de selección única.
+  const campoUnico =
+    modalidad === "secuencial" && !!campo && CAMPO_CIENCIAS[nivel] !== undefined && campo !== CAMPO_CIENCIAS[nivel];
+
+  const selectedContenidos = useMemo(
+    () =>
+      camposActivos.flatMap((c) =>
+        (contenidosPorCampo[c] ?? [])
+          .filter((ct) => contenidosSel.includes(keyOf(c, ct.titulo)))
+          .map((ct) => ({ campo: c, ...ct })),
+      ),
+    [camposActivos, contenidosPorCampo, contenidosSel],
+  );
+
+  const pdaDisponibles = useMemo(
+    () => [...new Set(selectedContenidos.flatMap((c) => c.pda))],
+    [selectedContenidos],
+  );
+
+  const contenidosTotal = useMemo(
+    () => camposActivos.reduce((acc, c) => acc + (contenidosPorCampo[c]?.length ?? 0), 0),
+    [camposActivos, contenidosPorCampo],
+  );
+
+  // El grado debe existir dentro del nivel.
   useEffect(() => {
-    if (!gradosDisponibles.includes(grado)) {
-      setGrado(gradosDisponibles[0]);
-    }
+    if (!gradosDisponibles.includes(grado)) setGrado(gradosDisponibles[0]);
   }, [gradosDisponibles, grado]);
 
-  // Cargar campos formativos del grado.
+  // Cargar campos del grado y limpiar selecciones dependientes.
   useEffect(() => {
     let cancelled = false;
     setCampo("");
-    setContenidos([]);
+    setCamposProyecto([]);
+    setContenidosPorCampo({});
     setContenidosSel([]);
     setPdaSel([]);
 
@@ -315,55 +337,94 @@ export function TeacherDashboard() {
     };
   }, [gradoLabel]);
 
-  // Cargar contenidos del campo seleccionado.
-  const cargarContenidos = useCallback(
-    async (campoSel: string) => {
-      setCampo(campoSel);
-      setContenidosSel([]);
-      setPdaSel([]);
-      if (!campoSel) {
-        setContenidos([]);
-        return;
+  // Cargar contenidos de los campos activos que aún no estén en memoria.
+  useEffect(() => {
+    const missing = camposActivos.filter((c) => c && !contenidosPorCampo[c]);
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (const c of missing) {
+        const response = await fetch(
+          `/api/curriculum?grado=${encodeURIComponent(gradoLabel)}&campo=${encodeURIComponent(c)}`,
+        );
+        const payload = (await response.json()) as { contenidos?: Contenido[] };
+        if (cancelled) return;
+        setContenidosPorCampo((prev) => (prev[c] ? prev : { ...prev, [c]: payload.contenidos ?? [] }));
       }
-      const response = await fetch(
-        `/api/curriculum?grado=${encodeURIComponent(gradoLabel)}&campo=${encodeURIComponent(campoSel)}`,
-      );
-      const payload = (await response.json()) as { contenidos?: Contenido[] };
-      setContenidos(payload.contenidos ?? []);
-    },
-    [gradoLabel],
-  );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [camposActivosKey, gradoLabel, contenidosPorCampo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // PDA derivados de los contenidos seleccionados.
-  const pdaDisponibles = useMemo(() => {
-    const todos = contenidos
-      .filter((contenido) => contenidosSel.includes(contenido.id))
-      .flatMap((contenido) => contenido.pda);
-    return [...new Set(todos)];
-  }, [contenidos, contenidosSel]);
+  // Podar contenidos seleccionados que dejaron de estar disponibles.
+  useEffect(() => {
+    const validas = new Set(
+      camposActivos.flatMap((c) => (contenidosPorCampo[c] ?? []).map((ct) => keyOf(c, ct.titulo))),
+    );
+    setContenidosSel((prev) => {
+      const next = prev.filter((k) => validas.has(k));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [camposActivosKey, contenidosPorCampo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Por defecto todos los PDA disponibles quedan seleccionados.
+  // Podar PDA seleccionados que dejaron de estar disponibles (sin auto-seleccionar).
   useEffect(() => {
     setPdaSel((prev) => {
-      const vigentes = prev.filter((pda) => pdaDisponibles.includes(pda));
-      const nuevos = pdaDisponibles.filter((pda) => !prev.includes(pda));
-      return [...vigentes, ...nuevos];
+      const next = prev.filter((p) => pdaDisponibles.includes(p));
+      return next.length === prev.length ? prev : next;
     });
   }, [pdaDisponibles]);
+
+  // ── Handlers de selección ──
+  function toggleContenido(campoSel: string, titulo: string) {
+    const k = keyOf(campoSel, titulo);
+    if (campoUnico) {
+      setContenidosSel([k]);
+    } else {
+      setContenidosSel((prev) => toggle(prev, k));
+    }
+  }
+
+  function todosContenidos() {
+    if (campoUnico) {
+      const first = (contenidosPorCampo[campo] ?? [])[0];
+      setContenidosSel(first ? [keyOf(campo, first.titulo)] : []);
+      return;
+    }
+    setContenidosSel(
+      camposActivos.flatMap((c) => (contenidosPorCampo[c] ?? []).map((ct) => keyOf(c, ct.titulo))),
+    );
+  }
+
+  const navItems: { id: Tab; label: string; icon: typeof Sparkles }[] = [
+    { id: "generacion", label: "Generación", icon: Layers },
+    { id: "planeacion", label: "Planeación", icon: FileText },
+    { id: "materiales", label: "Materiales", icon: Package },
+    { id: "preview", label: "Preview", icon: FileText },
+  ];
+
+  function go(next: Tab) {
+    setTab(next);
+    setSidebarOpen(false);
+  }
 
   async function generar() {
     setError(null);
     setUpgrade(false);
 
+    const campos = camposActivos.filter(Boolean);
+    const contenidos = [...new Set(selectedContenidos.map((c) => c.titulo))];
+
     if (!nombreDocente || !nombreEscuela || !periodoPlaneado || !proyecto) {
       setError("Completa los datos del docente y el tema detonador.");
       return;
     }
-    if (!campo) {
-      setError("Selecciona un campo formativo.");
+    if (campos.length === 0) {
+      setError(modalidad === "proyecto" ? "Selecciona al menos un campo formativo." : "Selecciona un campo formativo.");
       return;
     }
-    if (contenidosSel.length === 0) {
+    if (contenidos.length === 0) {
       setError("Selecciona al menos un contenido.");
       return;
     }
@@ -386,8 +447,8 @@ export function TeacherDashboard() {
         duracion,
         sesiones,
         proyecto,
-        campos: [campo],
-        contenidos: contenidosSel,
+        campos,
+        contenidos,
         pda: pdaSel,
         estrategias,
         contextoGrupo: contextoGrupo || undefined,
@@ -403,7 +464,6 @@ export function TeacherDashboard() {
     });
 
     const payload = await response.json();
-
     if (!response.ok) {
       setLoading(false);
       setError(payload.error ?? "No se pudo generar la planeación.");
@@ -411,7 +471,6 @@ export function TeacherDashboard() {
       return;
     }
 
-    // Cargar el contenido generado para mostrarlo en las pestañas.
     const draftResponse = await fetch(`/api/drafts/${payload.draftId}`);
     const draftData = await draftResponse.json();
     setLoading(false);
@@ -419,7 +478,6 @@ export function TeacherDashboard() {
       id: payload.draftId,
       title: draftData.title ?? payload.title,
       content: draftData.content ?? "",
-      expiresAt: payload.expiresAt,
     });
     setTab("planeacion");
   }
@@ -477,18 +535,6 @@ export function TeacherDashboard() {
     URL.revokeObjectURL(url);
   }
 
-  const navItems: { id: Tab; label: string; icon: typeof Sparkles }[] = [
-    { id: "generacion", label: "Generación", icon: Layers },
-    { id: "planeacion", label: "Planeación", icon: FileText },
-    { id: "materiales", label: "Materiales", icon: Package },
-    { id: "preview", label: "Preview", icon: FileText },
-  ];
-
-  function go(next: Tab) {
-    setTab(next);
-    setSidebarOpen(false);
-  }
-
   return (
     <div className="app">
       <header className="header">
@@ -523,9 +569,7 @@ export function TeacherDashboard() {
               </button>
             );
           })}
-
           <div className="nav-spacer" />
-
           <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
             <LogOut size={16} />
             Salir
@@ -534,60 +578,448 @@ export function TeacherDashboard() {
 
         <main className="main">
           {tab === "generacion" ? (
-            <GeneracionView
-              {...{
-                nombreDocente,
-                setNombreDocente,
-                nombreEscuela,
-                setNombreEscuela,
-                periodoPlaneado,
-                setPeriodoPlaneado,
-                nivel,
-                setNivel,
-                grado,
-                setGrado,
-                gradosDisponibles,
-                modalidad,
-                setModalidad,
-                sesiones,
-                setSesiones,
-                duracion,
-                setDuracion,
-                camposDisponibles: camposFiltrados,
-                campo,
-                cargarContenidos,
-                contenidos,
-                contenidosSel,
-                setContenidosSel,
-                contenidosOpen,
-                setContenidosOpen,
-                pdaDisponibles,
-                pdaSel,
-                setPdaSel,
-                pdaOpen,
-                setPdaOpen,
-                estrategias,
-                setEstrategias,
-                proyecto,
-                setProyecto,
-                contextoGrupo,
-                setContextoGrupo,
-                materialesDisponibles,
-                setMaterialesDisponibles,
-                niActiva,
-                setNiActiva,
-                condiciones,
-                setCondiciones,
-                otraDescripcion,
-                setOtraDescripcion,
-                nivelDetalle,
-                setNivelDetalle,
-                loading,
-                error,
-                upgrade,
-                generar,
-              }}
-            />
+            <div className="page-inner">
+              <div className="intro">
+                <h2>
+                  Generador de
+                  <br />
+                  <span>Planeación Didáctica</span>
+                </h2>
+                <p>
+                  Diseña planeaciones inclusivas alineadas a la Nueva Escuela Mexicana, adaptadas para estudiantes
+                  neurodivergentes.
+                </p>
+                <div className="intro-meta">
+                  <div className="meta-item">
+                    <div className="meta-dot" />
+                    Basado en NEM
+                  </div>
+                  <div className="meta-item">
+                    <div className="meta-dot" />
+                    Enfoque inclusivo
+                  </div>
+                  <div className="meta-item">
+                    <div className="meta-dot" />
+                    IA Generativa
+                  </div>
+                </div>
+              </div>
+
+              {/* Datos del docente */}
+              <div className="section-label">Datos del docente</div>
+              <div className="card">
+                <div className="grid-3">
+                  <div className="field">
+                    <label>Nombre del docente</label>
+                    <input
+                      type="text"
+                      value={nombreDocente}
+                      onChange={(e) => setNombreDocente(e.target.value)}
+                      placeholder="Ej: María González López"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Nombre de la escuela</label>
+                    <input
+                      type="text"
+                      value={nombreEscuela}
+                      onChange={(e) => setNombreEscuela(e.target.value)}
+                      placeholder="Ej: Primaria Benito Juárez"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Periodo planeado</label>
+                    <input
+                      type="text"
+                      value={periodoPlaneado}
+                      onChange={(e) => setPeriodoPlaneado(e.target.value)}
+                      placeholder="Ej: Enero – Febrero 2025"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Configuración del grupo */}
+              <div className="section-label">Configuración del grupo</div>
+              <div className="card">
+                <div className="grid-3" style={{ marginBottom: 16 }}>
+                  <div className="field">
+                    <label>Nivel educativo</label>
+                    <select value={nivel} onChange={(e) => setNivel(e.target.value as NivelEdu)}>
+                      {NIVELES_EDU.map((n) => (
+                        <option key={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Grado</label>
+                    <select value={grado} onChange={(e) => setGrado(e.target.value)}>
+                      {gradosDisponibles.map((g) => (
+                        <option key={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Modalidad</label>
+                    <div className="toggle-group">
+                      <button type="button" data-active={modalidad === "secuencial"} onClick={() => setModalidad("secuencial")}>
+                        Secuencial
+                      </button>
+                      <button type="button" data-active={modalidad === "proyecto"} onClick={() => setModalidad("proyecto")}>
+                        Proyecto
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid-4">
+                  <div className="field span-2">
+                    <label>{modalidad === "proyecto" ? "Campos formativos (varios)" : "Campo formativo"}</label>
+                    {modalidad === "secuencial" ? (
+                      <select value={campo} onChange={(e) => setCampo(e.target.value)}>
+                        <option value="">Selecciona un campo</option>
+                        {camposFiltrados.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="select-display"
+                          data-empty={camposProyecto.length === 0}
+                          onClick={() => setCamposOpen((v) => !v)}
+                        >
+                          {camposProyecto.length === 0
+                            ? "Selecciona campos"
+                            : `${camposProyecto.length} de ${camposFiltrados.length} campos`}
+                        </button>
+                        {camposOpen ? (
+                          <div className="select-panel">
+                            <div className="select-toolbar">
+                              <button type="button" onClick={() => setCamposProyecto([...camposFiltrados])}>
+                                Todos
+                              </button>
+                              <button type="button" onClick={() => setCamposProyecto([])}>
+                                Ninguno
+                              </button>
+                            </div>
+                            <div className="cascade-list">
+                              {camposFiltrados.map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  className="ni-item"
+                                  data-active={camposProyecto.includes(c)}
+                                  onClick={() => setCamposProyecto((prev) => toggle(prev, c))}
+                                >
+                                  <span className="ni-check" />
+                                  <span className="ni-item-text">
+                                    <span className="ni-item-title">{c}</span>
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                  <div className="field">
+                    <label>Sesiones</label>
+                    <div className="number-input">
+                      <button type="button" className="num-btn left" onClick={() => setSesiones((v) => clamp(v - 1, 1, 20))} aria-label="Menos sesiones">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={sesiones}
+                        onChange={(e) => setSesiones(clamp(Number(e.target.value), 1, 20))}
+                      />
+                      <button type="button" className="num-btn right" onClick={() => setSesiones((v) => clamp(v + 1, 1, 20))} aria-label="Más sesiones">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label>Duración (min)</label>
+                    <div className="number-input">
+                      <button type="button" className="num-btn left" onClick={() => setDuracion((v) => clamp(v - 5, 30, 240))} aria-label="Menos minutos">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={30}
+                        max={240}
+                        step={5}
+                        value={duracion}
+                        onChange={(e) => setDuracion(clamp(Number(e.target.value), 30, 240))}
+                      />
+                      <button type="button" className="num-btn right" onClick={() => setDuracion((v) => clamp(v + 5, 30, 240))} aria-label="Más minutos">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contenidos y procesos */}
+              <div className="section-label">Contenidos y procesos</div>
+              <div className="card">
+                <div className="contenidos-header">
+                  <label style={{ fontSize: 12, color: "var(--text)" }}>Contenidos curriculares</label>
+                  <span className="link-action">
+                    <Upload size={11} />
+                    Base NEM
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  className="select-display"
+                  data-empty={contenidosSel.length === 0}
+                  onClick={() => setContenidosOpen((v) => !v)}
+                  disabled={contenidosTotal === 0}
+                >
+                  {contenidosTotal === 0
+                    ? "Selecciona un campo formativo primero"
+                    : `Seleccionados: ${contenidosSel.length} de ${contenidosTotal}`}
+                </button>
+
+                {contenidosOpen && contenidosTotal > 0 ? (
+                  <div className="select-panel">
+                    {!campoUnico ? (
+                      <div className="select-toolbar">
+                        <button type="button" onClick={todosContenidos}>
+                          Todos
+                        </button>
+                        <button type="button" onClick={() => setContenidosSel([])}>
+                          Ninguno
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="cascade-list">
+                      {camposActivos.map((c) => {
+                        const lista = contenidosPorCampo[c] ?? [];
+                        if (lista.length === 0) return null;
+                        return (
+                          <div className="cascade-group" key={c}>
+                            {camposActivos.length > 1 ? <strong>{c}</strong> : null}
+                            {lista.map((ct) => (
+                              <button
+                                key={ct.id}
+                                type="button"
+                                className="ni-item"
+                                data-active={contenidosSel.includes(keyOf(c, ct.titulo))}
+                                onClick={() => toggleContenido(c, ct.titulo)}
+                              >
+                                <span className="ni-check" />
+                                <span className="ni-item-text">
+                                  <span className="ni-item-title">{ct.titulo}</span>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                <p className="hint">
+                  {campoUnico ? "Selecciona UN contenido." : "Selecciona uno o varios contenidos."} Los PDA se cargan
+                  según los contenidos elegidos.
+                </p>
+
+                <div className="field" style={{ marginTop: 16 }}>
+                  <label>Procesos de Desarrollo de Aprendizaje (PDA)</label>
+                  <button
+                    type="button"
+                    className="select-display"
+                    data-empty={pdaSel.length === 0}
+                    onClick={() => setPdaOpen((v) => !v)}
+                    disabled={pdaDisponibles.length === 0}
+                  >
+                    {pdaDisponibles.length === 0
+                      ? "Selecciona contenidos primero"
+                      : `Seleccionados: ${pdaSel.length} de ${pdaDisponibles.length}`}
+                  </button>
+                  {pdaOpen && pdaDisponibles.length > 0 ? (
+                    <div className="select-panel">
+                      <div className="select-toolbar">
+                        <button type="button" onClick={() => setPdaSel([...pdaDisponibles])}>
+                          Todos
+                        </button>
+                        <button type="button" onClick={() => setPdaSel([])}>
+                          Ninguno
+                        </button>
+                      </div>
+                      <div className="cascade-list">
+                        {pdaDisponibles.map((pda, index) => (
+                          <button
+                            key={`${index}-${pda.slice(0, 24)}`}
+                            type="button"
+                            className="ni-item"
+                            data-active={pdaSel.includes(pda)}
+                            onClick={() => setPdaSel((prev) => toggle(prev, pda))}
+                          >
+                            <span className="ni-check" />
+                            <span className="ni-item-text">
+                              <span className="ni-item-title">{pda}</span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="hint">Los PDA se actualizan automáticamente según los contenidos seleccionados.</p>
+                </div>
+              </div>
+
+              {/* Estrategias de evaluación */}
+              <div className="section-label">Estrategias de evaluación</div>
+              <div className="card">
+                <div className="chips">
+                  {ESTRATEGIAS.map((estrategia) => (
+                    <button
+                      key={estrategia}
+                      type="button"
+                      className="chip"
+                      data-active={estrategias.includes(estrategia)}
+                      onClick={() => setEstrategias((prev) => toggle(prev, estrategia))}
+                    >
+                      {estrategia}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tema y contexto */}
+              <div className="section-label">Tema y contexto</div>
+              <div className="card">
+                <div className="field" style={{ marginBottom: 14 }}>
+                  <label>Tema detonador</label>
+                  <textarea
+                    value={proyecto}
+                    onChange={(e) => setProyecto(e.target.value)}
+                    placeholder="Describe la idea o proyecto central que guiará el aprendizaje del grupo..."
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 14 }}>
+                  <label>
+                    Contexto del grupo <span style={{ color: "#45426A" }}>(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={contextoGrupo}
+                    onChange={(e) => setContextoGrupo(e.target.value)}
+                    placeholder="Tamaño del grupo, dinámica, entorno..."
+                  />
+                </div>
+                <div className="field">
+                  <label>
+                    Recursos y materiales disponibles <span style={{ color: "#45426A" }}>(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={materialesDisponibles}
+                    onChange={(e) => setMaterialesDisponibles(e.target.value)}
+                    placeholder="Aula, internet, proyector, cartulinas, tablets..."
+                  />
+                </div>
+              </div>
+
+              {/* Neuroinclusividad */}
+              <div className="section-label">Neuroinclusividad</div>
+              <div className="card">
+                <div className="ni-toggle-row">
+                  <div className="ni-toggle-label">
+                    <Users size={16} />
+                    Incluir adaptaciones neuroinclusivas
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {niActiva ? <span className="ni-badge">Activo</span> : null}
+                    <label className="switch">
+                      <input type="checkbox" checked={niActiva} onChange={(e) => setNiActiva(e.target.checked)} />
+                      <span className="switch-slider" />
+                    </label>
+                  </div>
+                </div>
+
+                {niActiva ? (
+                  <div className="ni-panel">
+                    <p className="ni-desc">
+                      Selecciona las condiciones presentes en tu grupo. La planeación incluirá estrategias y
+                      adaptaciones específicas para cada una.
+                    </p>
+                    <div className="ni-grid">
+                      {CONDICIONES.map((condicion) => (
+                        <button
+                          key={condicion.value}
+                          type="button"
+                          className="ni-item"
+                          data-active={condiciones.includes(condicion.value)}
+                          onClick={() => setCondiciones((prev) => toggle(prev, condicion.value))}
+                        >
+                          <span className="ni-check" />
+                          <span className="ni-item-text">
+                            <span className="ni-item-title">{condicion.title}</span>
+                            <span className="ni-item-sub">{condicion.sub}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {condiciones.includes("otra") ? (
+                      <div style={{ marginTop: 8 }}>
+                        <input
+                          type="text"
+                          value={otraDescripcion}
+                          onChange={(e) => setOtraDescripcion(e.target.value)}
+                          placeholder="Describe la condición o necesidad específica del estudiante..."
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="ni-intensity">
+                      <label>Nivel de detalle de las adaptaciones</label>
+                      <div className="intensity-options">
+                        {NIVELES_DETALLE.map((n) => (
+                          <button
+                            key={n.value}
+                            type="button"
+                            className="intensity-opt"
+                            data-active={nivelDetalle === n.value}
+                            onClick={() => setNivelDetalle(n.value)}
+                          >
+                            {n.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="cta-area">
+                {error ? <p className="alert">{error}</p> : null}
+                {upgrade ? (
+                  <a className="button secondary" href="/cuenta">
+                    Activar membresía
+                  </a>
+                ) : null}
+                <button className="btn-generate" type="button" onClick={generar} disabled={loading}>
+                  {loading ? <Loader2 size={18} className="spin" /> : <Sparkles size={18} />}
+                  {loading ? "Generando…" : "Generar Planeación"}
+                </button>
+                <p className="cta-note">
+                  Los recuadros de salida son editables. Puedes copiar cada sección o descargar la planeación.
+                </p>
+              </div>
+            </div>
           ) : null}
 
           {tab === "planeacion" ? (
@@ -620,474 +1052,6 @@ export function TeacherDashboard() {
         </a>{" "}
         · Uso educativo
       </footer>
-    </div>
-  );
-}
-
-// ─────────────────────────── Generación ───────────────────────────
-type GeneracionProps = {
-  nombreDocente: string;
-  setNombreDocente: (v: string) => void;
-  nombreEscuela: string;
-  setNombreEscuela: (v: string) => void;
-  periodoPlaneado: string;
-  setPeriodoPlaneado: (v: string) => void;
-  nivel: NivelEdu;
-  setNivel: (v: NivelEdu) => void;
-  grado: string;
-  setGrado: (v: string) => void;
-  gradosDisponibles: string[];
-  modalidad: "secuencial" | "proyecto";
-  setModalidad: (v: "secuencial" | "proyecto") => void;
-  sesiones: number;
-  setSesiones: (updater: (v: number) => number) => void;
-  duracion: number;
-  setDuracion: (updater: (v: number) => number) => void;
-  camposDisponibles: string[];
-  campo: string;
-  cargarContenidos: (campo: string) => void;
-  contenidos: Contenido[];
-  contenidosSel: string[];
-  setContenidosSel: (updater: (prev: string[]) => string[]) => void;
-  contenidosOpen: boolean;
-  setContenidosOpen: (updater: (v: boolean) => boolean) => void;
-  pdaDisponibles: string[];
-  pdaSel: string[];
-  setPdaSel: (updater: (prev: string[]) => string[]) => void;
-  pdaOpen: boolean;
-  setPdaOpen: (updater: (v: boolean) => boolean) => void;
-  estrategias: string[];
-  setEstrategias: (updater: (prev: string[]) => string[]) => void;
-  proyecto: string;
-  setProyecto: (v: string) => void;
-  contextoGrupo: string;
-  setContextoGrupo: (v: string) => void;
-  materialesDisponibles: string;
-  setMaterialesDisponibles: (v: string) => void;
-  niActiva: boolean;
-  setNiActiva: (v: boolean) => void;
-  condiciones: string[];
-  setCondiciones: (updater: (prev: string[]) => string[]) => void;
-  otraDescripcion: string;
-  setOtraDescripcion: (v: string) => void;
-  nivelDetalle: "compacto" | "estandar" | "detallado";
-  setNivelDetalle: (v: "compacto" | "estandar" | "detallado") => void;
-  loading: boolean;
-  error: string | null;
-  upgrade: boolean;
-  generar: () => void;
-};
-
-function GeneracionView(props: GeneracionProps) {
-  const {
-    contenidos,
-    contenidosSel,
-    pdaDisponibles,
-    pdaSel,
-    contenidosOpen,
-    setContenidosOpen,
-    pdaOpen,
-    setPdaOpen,
-  } = props;
-
-  return (
-    <div className="page-inner">
-      <div className="intro">
-        <h2>
-          Generador de
-          <br />
-          <span>Planeación Didáctica</span>
-        </h2>
-        <p>
-          Diseña planeaciones inclusivas alineadas a la Nueva Escuela Mexicana, adaptadas para estudiantes
-          neurodivergentes.
-        </p>
-        <div className="intro-meta">
-          <div className="meta-item">
-            <div className="meta-dot" />
-            Basado en NEM
-          </div>
-          <div className="meta-item">
-            <div className="meta-dot" />
-            Enfoque inclusivo
-          </div>
-          <div className="meta-item">
-            <div className="meta-dot" />
-            IA Generativa
-          </div>
-        </div>
-      </div>
-
-      {/* Datos del docente */}
-      <div className="section-label">Datos del docente</div>
-      <div className="card">
-        <div className="grid-3">
-          <div className="field">
-            <label>Nombre del docente</label>
-            <input
-              type="text"
-              value={props.nombreDocente}
-              onChange={(e) => props.setNombreDocente(e.target.value)}
-              placeholder="Ej: María González López"
-            />
-          </div>
-          <div className="field">
-            <label>Nombre de la escuela</label>
-            <input
-              type="text"
-              value={props.nombreEscuela}
-              onChange={(e) => props.setNombreEscuela(e.target.value)}
-              placeholder="Ej: Primaria Benito Juárez"
-            />
-          </div>
-          <div className="field">
-            <label>Periodo planeado</label>
-            <input
-              type="text"
-              value={props.periodoPlaneado}
-              onChange={(e) => props.setPeriodoPlaneado(e.target.value)}
-              placeholder="Ej: Enero – Febrero 2025"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Configuración del grupo */}
-      <div className="section-label">Configuración del grupo</div>
-      <div className="card">
-        <div className="grid-3" style={{ marginBottom: 16 }}>
-          <div className="field">
-            <label>Nivel educativo</label>
-            <select value={props.nivel} onChange={(e) => props.setNivel(e.target.value as NivelEdu)}>
-              {NIVELES_EDU.map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Grado</label>
-            <select value={props.grado} onChange={(e) => props.setGrado(e.target.value)}>
-              {props.gradosDisponibles.map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Modalidad</label>
-            <div className="toggle-group">
-              <button
-                type="button"
-                data-active={props.modalidad === "secuencial"}
-                onClick={() => props.setModalidad("secuencial")}
-              >
-                Secuencial
-              </button>
-              <button
-                type="button"
-                data-active={props.modalidad === "proyecto"}
-                onClick={() => props.setModalidad("proyecto")}
-              >
-                Proyecto
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="grid-4">
-          <div className="field span-2">
-            <label>Campo formativo</label>
-            <select value={props.campo} onChange={(e) => props.cargarContenidos(e.target.value)}>
-              <option value="">Selecciona un campo</option>
-              {props.camposDisponibles.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Sesiones</label>
-            <div className="number-input">
-              <button
-                type="button"
-                className="num-btn left"
-                onClick={() => props.setSesiones((v) => clamp(v - 1, 1, 20))}
-                aria-label="Menos sesiones"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={props.sesiones}
-                onChange={(e) => props.setSesiones(() => clamp(Number(e.target.value), 1, 20))}
-              />
-              <button
-                type="button"
-                className="num-btn right"
-                onClick={() => props.setSesiones((v) => clamp(v + 1, 1, 20))}
-                aria-label="Más sesiones"
-              >
-                +
-              </button>
-            </div>
-          </div>
-          <div className="field">
-            <label>Duración (min)</label>
-            <div className="number-input">
-              <button
-                type="button"
-                className="num-btn left"
-                onClick={() => props.setDuracion((v) => clamp(v - 5, 30, 240))}
-                aria-label="Menos minutos"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min={30}
-                max={240}
-                step={5}
-                value={props.duracion}
-                onChange={(e) => props.setDuracion(() => clamp(Number(e.target.value), 30, 240))}
-              />
-              <button
-                type="button"
-                className="num-btn right"
-                onClick={() => props.setDuracion((v) => clamp(v + 5, 30, 240))}
-                aria-label="Más minutos"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Contenidos y procesos */}
-      <div className="section-label">Contenidos y procesos</div>
-      <div className="card">
-        <div className="contenidos-header">
-          <label style={{ fontSize: 12, color: "var(--text)" }}>Contenidos curriculares</label>
-          <span className="link-action">
-            <Upload size={11} />
-            Base NEM
-          </span>
-        </div>
-
-        <button
-          type="button"
-          className="select-display"
-          data-empty={contenidosSel.length === 0}
-          onClick={() => setContenidosOpen((v) => !v)}
-          disabled={contenidos.length === 0}
-        >
-          {contenidos.length === 0
-            ? "Selecciona un campo formativo primero"
-            : `Seleccionados: ${contenidosSel.length} de ${contenidos.length}`}
-        </button>
-
-        {contenidosOpen && contenidos.length > 0 ? (
-          <div className="select-panel">
-            <div className="cascade-list">
-              {contenidos.map((contenido) => (
-                <button
-                  key={contenido.id}
-                  type="button"
-                  className="ni-item"
-                  data-active={contenidosSel.includes(contenido.id)}
-                  onClick={() => props.setContenidosSel((prev) => toggle(prev, contenido.id))}
-                >
-                  <span className="ni-check" />
-                  <span className="ni-item-text">
-                    <span className="ni-item-title">{contenido.titulo}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        <p className="hint">
-          Si existe el catálogo NEM del grado se carga automáticamente. Selecciona el campo y luego los contenidos.
-        </p>
-
-        <div className="field" style={{ marginTop: 16 }}>
-          <label>Procesos de Desarrollo de Aprendizaje (PDA)</label>
-          <button
-            type="button"
-            className="select-display"
-            data-empty={pdaSel.length === 0}
-            onClick={() => setPdaOpen((v) => !v)}
-            disabled={pdaDisponibles.length === 0}
-          >
-            {pdaDisponibles.length === 0
-              ? "Selecciona contenidos primero"
-              : `Seleccionados: ${pdaSel.length} de ${pdaDisponibles.length}`}
-          </button>
-          {pdaOpen && pdaDisponibles.length > 0 ? (
-            <div className="select-panel">
-              <div className="cascade-list">
-                {pdaDisponibles.map((pda, index) => (
-                  <button
-                    key={`${index}-${pda.slice(0, 24)}`}
-                    type="button"
-                    className="ni-item"
-                    data-active={pdaSel.includes(pda)}
-                    onClick={() => props.setPdaSel((prev) => toggle(prev, pda))}
-                  >
-                    <span className="ni-check" />
-                    <span className="ni-item-text">
-                      <span className="ni-item-title">{pda}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <p className="hint">Los PDA se actualizan automáticamente según los contenidos seleccionados.</p>
-        </div>
-      </div>
-
-      {/* Estrategias de evaluación */}
-      <div className="section-label">Estrategias de evaluación</div>
-      <div className="card">
-        <div className="chips">
-          {ESTRATEGIAS.map((estrategia) => (
-            <button
-              key={estrategia}
-              type="button"
-              className="chip"
-              data-active={props.estrategias.includes(estrategia)}
-              onClick={() => props.setEstrategias((prev) => toggle(prev, estrategia))}
-            >
-              {estrategia}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tema y contexto */}
-      <div className="section-label">Tema y contexto</div>
-      <div className="card">
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label>Tema detonador</label>
-          <textarea
-            value={props.proyecto}
-            onChange={(e) => props.setProyecto(e.target.value)}
-            placeholder="Describe la idea o proyecto central que guiará el aprendizaje del grupo..."
-          />
-        </div>
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label>
-            Contexto del grupo <span style={{ color: "#45426A" }}>(opcional)</span>
-          </label>
-          <input
-            type="text"
-            value={props.contextoGrupo}
-            onChange={(e) => props.setContextoGrupo(e.target.value)}
-            placeholder="Tamaño del grupo, dinámica, entorno..."
-          />
-        </div>
-        <div className="field">
-          <label>
-            Recursos y materiales disponibles <span style={{ color: "#45426A" }}>(opcional)</span>
-          </label>
-          <input
-            type="text"
-            value={props.materialesDisponibles}
-            onChange={(e) => props.setMaterialesDisponibles(e.target.value)}
-            placeholder="Aula, internet, proyector, cartulinas, tablets..."
-          />
-        </div>
-      </div>
-
-      {/* Neuroinclusividad */}
-      <div className="section-label">Neuroinclusividad</div>
-      <div className="card">
-        <div className="ni-toggle-row">
-          <div className="ni-toggle-label">
-            <Users size={16} />
-            Incluir adaptaciones neuroinclusivas
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {props.niActiva ? <span className="ni-badge">Activo</span> : null}
-            <label className="switch">
-              <input type="checkbox" checked={props.niActiva} onChange={(e) => props.setNiActiva(e.target.checked)} />
-              <span className="switch-slider" />
-            </label>
-          </div>
-        </div>
-
-        {props.niActiva ? (
-          <div className="ni-panel">
-            <p className="ni-desc">
-              Selecciona las condiciones presentes en tu grupo. La planeación incluirá estrategias y adaptaciones
-              específicas para cada una.
-            </p>
-            <div className="ni-grid">
-              {CONDICIONES.map((condicion) => (
-                <button
-                  key={condicion.value}
-                  type="button"
-                  className="ni-item"
-                  data-active={props.condiciones.includes(condicion.value)}
-                  onClick={() => props.setCondiciones((prev) => toggle(prev, condicion.value))}
-                >
-                  <span className="ni-check" />
-                  <span className="ni-item-text">
-                    <span className="ni-item-title">{condicion.title}</span>
-                    <span className="ni-item-sub">{condicion.sub}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {props.condiciones.includes("otra") ? (
-              <div style={{ marginTop: 8 }}>
-                <input
-                  type="text"
-                  value={props.otraDescripcion}
-                  onChange={(e) => props.setOtraDescripcion(e.target.value)}
-                  placeholder="Describe la condición o necesidad específica del estudiante..."
-                />
-              </div>
-            ) : null}
-
-            <div className="ni-intensity">
-              <label>Nivel de detalle de las adaptaciones</label>
-              <div className="intensity-options">
-                {NIVELES_DETALLE.map((n) => (
-                  <button
-                    key={n.value}
-                    type="button"
-                    className="intensity-opt"
-                    data-active={props.nivelDetalle === n.value}
-                    onClick={() => props.setNivelDetalle(n.value)}
-                  >
-                    {n.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="cta-area">
-        {props.error ? <p className="alert">{props.error}</p> : null}
-        {props.upgrade ? (
-          <a className="button secondary" href="/cuenta">
-            Activar membresía
-          </a>
-        ) : null}
-        <button className="btn-generate" type="button" onClick={props.generar} disabled={props.loading}>
-          {props.loading ? <Loader2 size={18} className="spin" /> : <Sparkles size={18} />}
-          {props.loading ? "Generando…" : "Generar Planeación"}
-        </button>
-        <p className="cta-note">
-          Los recuadros de salida son editables. Puedes copiar cada sección o descargar la planeación.
-        </p>
-      </div>
     </div>
   );
 }
@@ -1160,13 +1124,7 @@ function PlaneacionView({
 }
 
 // ─────────────────────────── Materiales ───────────────────────────
-function MaterialesView({
-  draft,
-  onGo,
-}: {
-  draft: { content: string } | null;
-  onGo: (tab: Tab) => void;
-}) {
+function MaterialesView({ draft, onGo }: { draft: { content: string } | null; onGo: (tab: Tab) => void }) {
   if (!draft) {
     return (
       <div className="page-inner wide">
