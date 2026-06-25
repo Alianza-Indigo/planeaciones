@@ -377,16 +377,17 @@ Proposito: [Consolidacion y evaluacion]
 - [Reflexion metacognitiva]
 - [Anticipacion de la siguiente sesion]
 
-RECURSOS Y MATERIALES PARA ESTA SESION:
+RECURSOS Y MATERIALES PARA ESTA SESION (LISTA OBLIGATORIA Y ESPECIFICA):
+Listar TODOS los materiales que requiere ESTA sesion, vinculados a sus actividades. Cada material debe ser CONCRETO y CUANTIFICADO (nombre + cantidad + formato/tamano + momento de uso). Prohibido dejar placeholders o materiales genericos del tipo "material didactico".
+Ejemplos del nivel de detalle esperado: "30 tarjetas de cartulina de 10x15 cm (1 por alumno)", "1 pliego de papel bond de 90x120 cm por equipo", "Hoja imprimible 'Mi Nombre' - 1 copia por alumno", "Plumones de colores - 1 caja por equipo de 4".
 Para el Docente:
-- [Material especifico 1 para el docente en esta sesion]
-- [Material especifico 2 para el docente en esta sesion]
-- [Recurso didactico especifico para esta sesion]
-
+- [Material 1: nombre, cantidad, formato/tamano y momento de uso en esta sesion]
+- [Material 2: nombre, cantidad, formato/tamano y momento de uso en esta sesion]
+- [Recurso didactico: nombre, cantidad y proposito en esta sesion]
 Para los Estudiantes:
-- Individual: [Material que cada estudiante necesita para esta sesion]
-- Por equipo: [Material compartido para equipos en esta sesion]
-- Opcional: [Material adicional para esta sesion especifica]
+- Individual: [Material por estudiante: nombre + cantidad por alumno]
+- Por equipo: [Material por equipo: nombre + cantidad por equipo + tamano del equipo]
+- Opcional: [Material adicional cuando aplique, con su cantidad]
 
 ADAPTACIONES INCLUSIVAS APLICADAS:
 - Modalidades integradas: Visual, auditiva, kinestesica disponibles
