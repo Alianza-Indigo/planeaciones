@@ -235,8 +235,12 @@ const DEMO_DRAFT = {
 - **Comunicación:** tarjetas de letras para señalar en lugar de explicación oral.
 
 ### Recursos y materiales de la Sesión 1
-- Para el docente: tarjeta grande con el nombre del docente; lista de categorías de familiares.
-- Para los estudiantes: hoja "Mi Nombre y el de Mi Familia" (una por estudiante); colores y lápices.
+Para el docente:
+- Tarjeta grande con el nombre del docente (1, cartulina 20x30 cm)
+- Lista de categorías de familiares (1 hoja de apoyo)
+Para los estudiantes:
+- Hoja "Mi Nombre y el de Mi Familia" (1 copia por alumno)
+- Colores y lápices (1 set por alumno)
 
 ## Sesión 2 · Descubriendo las Letras Similares
 
@@ -255,8 +259,11 @@ const DEMO_DRAFT = {
 - **Interacción grupal:** rol de "observador de letras" con menos interacción verbal.
 
 ### Recursos y materiales de la Sesión 2
-- Para el docente: juego de tarjetas de letras (c/s/z, b/v) plastificadas.
-- Para los estudiantes: hoja "Detectives de Letras" (una por equipo); lápiz.
+Para el docente:
+- Juego de tarjetas de letras c/s/z y b/v (1 set plastificado)
+Para los estudiantes:
+- Hoja "Detectives de Letras" (1 por equipo de 4)
+- Lápiz (1 por alumno)
 
 ## Sesión 3 · Creando Nuestro Mural de Nombres
 
@@ -275,8 +282,13 @@ const DEMO_DRAFT = {
 - **Comunicación:** tarjetas de sentimientos/emojis para expresar sin verbalizar.
 
 ### Recursos y materiales de la Sesión 3
-- Para el docente: pliego de papel para el mural; cinta adhesiva.
-- Para los estudiantes: tarjetas en blanco; plumones; lista visual de compañeros.
+Para el docente:
+- Pliego de papel bond para el mural (1 de 90x120 cm)
+- Cinta adhesiva (1 rollo)
+Para los estudiantes:
+- Tarjetas en blanco (1 por alumno)
+- Plumones (1 caja por equipo de 4)
+- Lista visual de compañeros (1 por alumno)
 
 ## Materiales
 
@@ -294,30 +306,48 @@ const DEMO_DRAFT = {
 `,
 };
 
-// Extrae los materiales del bloque "RECURSOS Y MATERIALES" dentro de una sesión.
-function extraerMaterialesDeSesion(body: string): string[] {
+type GrupoMateriales = { grupo: string; items: string[] };
+
+// Extrae los materiales del bloque "RECURSOS Y MATERIALES" dentro de una sesión,
+// separados por subgrupo (Para el docente / Para los estudiantes).
+function extraerMaterialesDeSesion(body: string): GrupoMateriales[] {
   const idx = body.search(/RECURSOS Y MATERIALES/i);
   if (idx === -1) return [];
   let region = body.slice(idx);
   // Corta al llegar a la siguiente subsección de la sesión.
   const fin = region.slice(20).search(/ADAPTACIONES INCLUSIVAS|VERIFICAR|^#{1,6}\s/im);
   if (fin > 0) region = region.slice(0, fin + 20);
-  const mats: string[] = [];
+
+  const grupos: GrupoMateriales[] = [];
+  let current: GrupoMateriales | null = null;
+
   for (const raw of region.split("\n")) {
-    const bullet = raw.trim().match(/^[-*]\s+(.*)$/);
+    const t = raw.trim();
+    const header = t.match(/^(?:#{0,4}\s*)?\**\s*(Para el [Dd]ocente|Para los [Ee]studiantes)\s*\**\s*:?\s*$/);
+    if (header) {
+      current = { grupo: /docente/i.test(header[1]) ? "Para el docente" : "Para los estudiantes", items: [] };
+      grupos.push(current);
+      continue;
+    }
+    const bullet = t.match(/^[-*]\s+(.*)$/);
     if (bullet) {
       const txt = bullet[1].replace(/\*\*/g, "").trim();
-      if (txt) mats.push(txt);
+      if (!txt) continue;
+      if (!current) {
+        current = { grupo: "Materiales", items: [] };
+        grupos.push(current);
+      }
+      current.items.push(txt);
     }
   }
-  return mats;
+  return grupos.filter((g) => g.items.length > 0);
 }
 
 // Materiales agrupados por sesión.
-function materialesPorSesion(content: string): { sesion: number; titulo: string; materiales: string[] }[] {
+function materialesPorSesion(content: string): { sesion: number; titulo: string; grupos: GrupoMateriales[] }[] {
   return parseSesiones(content)
-    .map((s, i) => ({ sesion: i + 1, titulo: s.title, materiales: extraerMaterialesDeSesion(s.body) }))
-    .filter((grupo) => grupo.materiales.length > 0);
+    .map((s, i) => ({ sesion: i + 1, titulo: s.title, grupos: extraerMaterialesDeSesion(s.body) }))
+    .filter((sesion) => sesion.grupos.length > 0);
 }
 
 // Materiales generales / apéndice (fuera de las sesiones).
@@ -1367,26 +1397,31 @@ function MaterialesView({
 
   return (
     <div className="page-inner wide">
-      {porSesion.map((grupo) => (
-        <div key={grupo.sesion}>
+      {porSesion.map((sesion) => (
+        <div key={sesion.sesion}>
           <div className="section-label">
-            Sesión {grupo.sesion}
-            {grupo.titulo ? ` · ${grupo.titulo.replace(/^SESION\s*\d+:?\s*/i, "")}` : ""}
+            Sesión {sesion.sesion}
+            {sesion.titulo ? ` · ${sesion.titulo.replace(/^SESION\s*\d+:?\s*/i, "")}` : ""}
           </div>
-          {grupo.materiales.map((material, index) => {
-            const { titulo, desc } = partirMaterial(material);
-            return (
-              <div className="material-card" key={index}>
-                <div className="material-icon">
-                  <Package size={18} />
-                </div>
-                <div className="material-body">
-                  <div className="material-title">{titulo}</div>
-                  {desc ? <div className="material-desc">{desc}</div> : null}
-                </div>
-              </div>
-            );
-          })}
+          {sesion.grupos.map((grupo, gi) => (
+            <div key={gi} style={{ marginBottom: 4 }}>
+              {grupo.grupo !== "Materiales" ? <div className="fase-label">{grupo.grupo}</div> : null}
+              {grupo.items.map((material, index) => {
+                const { titulo, desc } = partirMaterial(material);
+                return (
+                  <div className="material-card" key={index}>
+                    <div className="material-icon">
+                      <Package size={18} />
+                    </div>
+                    <div className="material-body">
+                      <div className="material-title">{titulo}</div>
+                      {desc ? <div className="material-desc">{desc}</div> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       ))}
 
