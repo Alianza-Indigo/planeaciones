@@ -8,6 +8,7 @@ import {
   FileText,
   Layers,
   Loader2,
+  LogIn,
   LogOut,
   Menu,
   Package,
@@ -18,7 +19,7 @@ import {
   UploadCloud,
   Users,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { Contenido } from "@/lib/curriculum/types";
@@ -300,11 +301,15 @@ function parseMateriales(content: string): string[] {
 }
 
 export function TeacherDashboard() {
+  const { status } = useSession();
+  const autenticado = status === "authenticated";
+
   const [tab, setTab] = useState<Tab>("generacion");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgrade, setUpgrade] = useState(false);
+  const [needLogin, setNeedLogin] = useState(false);
 
   // Datos del docente
   const [nombreDocente, setNombreDocente] = useState("");
@@ -500,6 +505,13 @@ export function TeacherDashboard() {
   async function generar() {
     setError(null);
     setUpgrade(false);
+    setNeedLogin(false);
+
+    if (!autenticado) {
+      setError("Inicia sesión con Google para generar tu planeación.");
+      setNeedLogin(true);
+      return;
+    }
 
     const campos = camposActivos.filter(Boolean);
     const contenidos = [...new Set(selectedContenidos.map((c) => c.titulo))];
@@ -556,6 +568,7 @@ export function TeacherDashboard() {
       setLoading(false);
       setError(payload.error ?? "No se pudo generar la planeación.");
       if (response.status === 403) setUpgrade(true);
+      if (response.status === 401) setNeedLogin(true);
       return;
     }
 
@@ -666,10 +679,17 @@ export function TeacherDashboard() {
             );
           })}
           <div className="nav-spacer" />
-          <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
-            <LogOut size={16} />
-            Salir
-          </button>
+          {autenticado ? (
+            <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
+              <LogOut size={16} />
+              Salir
+            </button>
+          ) : (
+            <button className="nav-item" type="button" onClick={() => signIn("google", { callbackUrl: "/planner" })}>
+              <LogIn size={16} />
+              Iniciar sesión
+            </button>
+          )}
         </aside>
 
         <main className="main">
@@ -1102,6 +1122,16 @@ export function TeacherDashboard() {
 
               <div className="cta-area">
                 {error ? <p className="alert">{error}</p> : null}
+                {needLogin ? (
+                  <button
+                    className="button primary"
+                    type="button"
+                    onClick={() => signIn("google", { callbackUrl: "/planner" })}
+                  >
+                    <LogIn size={16} />
+                    Iniciar sesión con Google
+                  </button>
+                ) : null}
                 {upgrade ? (
                   <a className="button secondary" href="/cuenta">
                     Activar membresía
