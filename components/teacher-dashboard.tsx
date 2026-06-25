@@ -234,6 +234,10 @@ const DEMO_DRAFT = {
 - **Sobrecarga sensorial:** rincón tranquilo o audífonos de cancelación de ruido.
 - **Comunicación:** tarjetas de letras para señalar en lugar de explicación oral.
 
+### Recursos y materiales de la Sesión 1
+- Para el docente: tarjeta grande con el nombre del docente; lista de categorías de familiares.
+- Para los estudiantes: hoja "Mi Nombre y el de Mi Familia" (una por estudiante); colores y lápices.
+
 ## Sesión 2 · Descubriendo las Letras Similares
 
 ### Inicio (10 min)
@@ -249,6 +253,10 @@ const DEMO_DRAFT = {
 **Adaptaciones neurodivergentes:**
 - **Función ejecutiva:** tarjetas de nombres pre-seleccionados.
 - **Interacción grupal:** rol de "observador de letras" con menos interacción verbal.
+
+### Recursos y materiales de la Sesión 2
+- Para el docente: juego de tarjetas de letras (c/s/z, b/v) plastificadas.
+- Para los estudiantes: hoja "Detectives de Letras" (una por equipo); lápiz.
 
 ## Sesión 3 · Creando Nuestro Mural de Nombres
 
@@ -266,6 +274,10 @@ const DEMO_DRAFT = {
 - **Sobrecarga sensorial:** estación de pegado para 2-3 estudiantes con temporizador visual.
 - **Comunicación:** tarjetas de sentimientos/emojis para expresar sin verbalizar.
 
+### Recursos y materiales de la Sesión 3
+- Para el docente: pliego de papel para el mural; cinta adhesiva.
+- Para los estudiantes: tarjetas en blanco; plumones; lista visual de compañeros.
+
 ## Materiales
 
 - Cuento "El Nombre de Todos" — historia sobre Ana que descubre la importancia de su nombre. Leer al inicio de la Sesión 1.
@@ -282,23 +294,64 @@ const DEMO_DRAFT = {
 `,
 };
 
-function parseMateriales(content: string): string[] {
+// Extrae los materiales del bloque "RECURSOS Y MATERIALES" dentro de una sesión.
+function extraerMaterialesDeSesion(body: string): string[] {
+  const idx = body.search(/RECURSOS Y MATERIALES/i);
+  if (idx === -1) return [];
+  let region = body.slice(idx);
+  // Corta al llegar a la siguiente subsección de la sesión.
+  const fin = region.slice(20).search(/ADAPTACIONES INCLUSIVAS|VERIFICAR|^#{1,6}\s/im);
+  if (fin > 0) region = region.slice(0, fin + 20);
+  const mats: string[] = [];
+  for (const raw of region.split("\n")) {
+    const bullet = raw.trim().match(/^[-*]\s+(.*)$/);
+    if (bullet) {
+      const txt = bullet[1].replace(/\*\*/g, "").trim();
+      if (txt) mats.push(txt);
+    }
+  }
+  return mats;
+}
+
+// Materiales agrupados por sesión.
+function materialesPorSesion(content: string): { sesion: number; titulo: string; materiales: string[] }[] {
+  return parseSesiones(content)
+    .map((s, i) => ({ sesion: i + 1, titulo: s.title, materiales: extraerMaterialesDeSesion(s.body) }))
+    .filter((grupo) => grupo.materiales.length > 0);
+}
+
+// Materiales generales / apéndice (fuera de las sesiones).
+function materialesGenerales(content: string): string[] {
   const lines = content.split("\n");
   const items: string[] = [];
   let capturing = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    const heading = trimmed.match(/^#{1,6}\s+(.*)$/);
-    if (heading) {
-      capturing = /materi|recurso|insumo/i.test(heading[1]);
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (/RECURSOS Y MATERIALES GENERALES|MATERIALES COMPLEMENTARIOS|^#{1,6}\s*Materiales\b/i.test(t)) {
+      capturing = true;
       continue;
     }
+    if (capturing && /^(EVALUACION|ADAPTACIONES Y DIVERSIFICACION|EVALUACION SUMATIVA|VERIFICACION|^#{1,6}\s)/i.test(t) && !/materi/i.test(t)) {
+      capturing = false;
+    }
     if (capturing) {
-      const bullet = trimmed.match(/^[-*]\s+(.*)$/);
-      if (bullet) items.push(bullet[1].replace(/\*\*/g, ""));
+      const bullet = t.match(/^[-*]\s+(.*)$/);
+      if (bullet) {
+        const txt = bullet[1].replace(/\*\*/g, "").trim();
+        if (txt) items.push(txt);
+      }
     }
   }
-  return items;
+  return [...new Set(items)];
+}
+
+// Separa "Nombre: descripción" para mostrarlo como título + detalle.
+function partirMaterial(texto: string): { titulo: string; desc: string } {
+  const i = texto.indexOf(":");
+  if (i > 0 && i < 60) {
+    return { titulo: texto.slice(0, i).trim(), desc: texto.slice(i + 1).trim() };
+  }
+  return { titulo: texto, desc: "" };
 }
 
 export function TeacherDashboard() {
@@ -1295,31 +1348,67 @@ function MaterialesView({
     );
   }
 
-  const materiales = parseMateriales(draft.content);
+  const porSesion = materialesPorSesion(draft.content);
+  const generales = materialesGenerales(draft.content);
 
-  return (
-    <div className="page-inner wide">
-      <div className="section-label">Materiales y recursos</div>
-      {materiales.length > 0 ? (
-        materiales.map((material, index) => (
-          <div className="material-card" key={index}>
-            <div className="material-icon">
-              <Package size={18} />
-            </div>
-            <div className="material-body">
-              <div className="material-desc">{material}</div>
-            </div>
-          </div>
-        ))
-      ) : (
+  if (porSesion.length === 0 && generales.length === 0) {
+    return (
+      <div className="page-inner wide">
         <div className="card">
           <p className="hint" style={{ marginTop: 0 }}>
-            Los materiales están integrados dentro de la planeación generada. Revísalos en la pestaña{" "}
-            <strong style={{ color: "var(--text)" }}>Planeación</strong> o en el texto completo en{" "}
+            La planeación no incluyó materiales detectables por sección. Revísalos en{" "}
+            <strong style={{ color: "var(--text)" }}>Planeación</strong> o en{" "}
             <strong style={{ color: "var(--text)" }}>Preview</strong>.
           </p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-inner wide">
+      {porSesion.map((grupo) => (
+        <div key={grupo.sesion}>
+          <div className="section-label">
+            Sesión {grupo.sesion}
+            {grupo.titulo ? ` · ${grupo.titulo.replace(/^SESION\s*\d+:?\s*/i, "")}` : ""}
+          </div>
+          {grupo.materiales.map((material, index) => {
+            const { titulo, desc } = partirMaterial(material);
+            return (
+              <div className="material-card" key={index}>
+                <div className="material-icon">
+                  <Package size={18} />
+                </div>
+                <div className="material-body">
+                  <div className="material-title">{titulo}</div>
+                  {desc ? <div className="material-desc">{desc}</div> : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {generales.length > 0 ? (
+        <>
+          <div className="section-label">Materiales generales y apéndice</div>
+          {generales.map((material, index) => {
+            const { titulo, desc } = partirMaterial(material);
+            return (
+              <div className="material-card" key={index}>
+                <div className="material-icon">
+                  <Package size={18} />
+                </div>
+                <div className="material-body">
+                  <div className="material-title">{titulo}</div>
+                  {desc ? <div className="material-desc">{desc}</div> : null}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : null}
     </div>
   );
 }
