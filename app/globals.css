@@ -593,10 +593,10 @@ textarea {
 }
 
 .intro h2 {
-  font-family: var(--font-head);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: -0.5px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.2px;
   line-height: 1.2;
   margin-bottom: 6px;
 }

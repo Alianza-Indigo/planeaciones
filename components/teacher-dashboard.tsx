@@ -581,9 +581,9 @@ export function TeacherDashboard() {
             <div className="page-inner">
               <div className="intro">
                 <h2>
-                  Generador de
+                  Asistente Docente de
                   <br />
-                  <span>Planeación Didáctica</span>
+                  <span>Inteligencia Artificial</span>
                 </h2>
                 <p>
                   Diseña planeaciones inclusivas alineadas a la Nueva Escuela Mexicana, adaptadas para estudiantes
