@@ -34,7 +34,7 @@ const navLinks: NavLink[] = [
   { href: "/admin/settings", label: "Ajustes", icon: Settings },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, email }: { children: React.ReactNode; email?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -47,7 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="logo-mark">AI</div>
         <div className="header-text">
           <h1>ADIA · Admin</h1>
-          <p>Panel de operación</p>
+          <p>{email ?? "Panel de operación"}</p>
         </div>
         <Link className="badge" href="/planner">
           Ir a la app

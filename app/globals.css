@@ -1307,6 +1307,90 @@ textarea {
   color: var(--text);
 }
 
+/* ── Chips de estado (admin) ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.tag.ok {
+  background: rgba(79, 209, 165, 0.12);
+  border-color: rgba(79, 209, 165, 0.4);
+  color: #6fe0b8;
+}
+
+.tag.missing {
+  background: rgba(255, 140, 140, 0.1);
+  border-color: rgba(255, 140, 140, 0.35);
+  color: var(--danger);
+}
+
+.tag.gold {
+  background: rgba(231, 184, 92, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.button.sm {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+/* ── Filas de configuración (admin settings) ── */
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.config-row:last-child {
+  border-bottom: none;
+}
+
+.config-row .config-key {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.config-row .config-key span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.config-value {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+
+/* ── Formulario inline (admin) ── */
+.admin-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 /* ── Admin legacy classes (cohesión con el tema ADIA) ── */
 .pageHeader {
   margin-bottom: 22px;
