@@ -303,6 +303,12 @@ Para los estudiantes:
 
 - **Formativa:** lista de cotejo durante las tres sesiones.
 - **Sumativa:** rúbrica del mural de nombres al cierre.
+
+VERIFICACION FINAL: Se han generado 3 sesiones completas.
+
+<<<MATERIALES_JSON>>>
+{"sesiones":[{"sesion":1,"titulo":"Conociendo nuestros nombres","materiales":[{"para":"docente","nombre":"Cuento: El Nombre de Todos","tipo":"lectura","cantidad":"1 lectura en voz alta","contenido":"Ana no entendía por qué su nombre tenía tantas letras. Una mañana, su abuela le contó que cada letra guardaba un pedacito de historia: la A del principio era por su bisabuela Amalia, la N por el río Nazas donde nació su mamá. Ana descubrió que su nombre no era solo suyo, también era de toda su familia. Esa tarde escribió su nombre con cuidado y, al lado, los nombres de quienes ama, y notó que la S de Sofía sonaba igual que la de su propio apellido."},{"para":"alumno","nombre":"Hoja 'Mi Nombre y el de Mi Familia'","tipo":"organizador","cantidad":"1 por alumno","contenido":"Formato con espacio para el nombre propio y 4 familiares, una columna para letras repetidas y un recuadro para dibujar un retrato."}]},{"sesion":2,"titulo":"Descubriendo las letras similares","materiales":[{"para":"docente","nombre":"Video: Letras que suenan parecido (c/s/z)","tipo":"video","cantidad":"1","contenido":"https://www.youtube.com/watch?v=ejemplo"},{"para":"alumno","nombre":"Hoja 'Detectives de Letras'","tipo":"organizador","cantidad":"1 por equipo de 4","contenido":"Tabla comparativa con columnas: cómo se ve / cómo suena / diferencia principal."}]},{"sesion":3,"titulo":"Mural de nombres","materiales":[{"para":"docente","nombre":"Tarjetas de sentimientos","tipo":"tarjeta","cantidad":"1 set","contenido":"Cuatro tarjetas con palabra + emoji: Alegría, Amistad, Unión, Orgullo."},{"para":"alumno","nombre":"Tarjeta para el mural","tipo":"otro","cantidad":"1 por alumno","contenido":"Cartulina de 10x15 cm para escribir y decorar el propio nombre."}]}]}
+<<<FIN_MATERIALES_JSON>>>
 `,
 };
 
@@ -375,6 +381,66 @@ function materialesGenerales(content: string): string[] {
   return [...new Set(items)];
 }
 
+// ── Materiales estructurados (bloque JSON que emite el modelo) ──
+type MaterialItem = { para?: string; nombre?: string; tipo?: string; cantidad?: string; contenido?: string };
+type MaterialesSesion = { sesion?: number; titulo?: string; materiales?: MaterialItem[] };
+type MaterialesData = { sesiones: MaterialesSesion[] };
+
+// Extrae el bloque <<<MATERIALES_JSON>>> y devuelve el texto sin el bloque + los datos.
+function splitMateriales(content: string): { texto: string; materiales: MaterialesData | null } {
+  const match = content.match(/<<<MATERIALES_JSON>>>([\s\S]*?)<<<FIN_MATERIALES_JSON>>>/);
+  if (!match) return { texto: content, materiales: null };
+  const texto = content.replace(match[0], "").trim();
+  let raw = match[1].trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try {
+    const data = JSON.parse(raw) as MaterialesData;
+    if (data && Array.isArray(data.sesiones)) return { texto, materiales: data };
+  } catch {
+    // JSON inválido o truncado: se ignora y queda el respaldo de texto.
+  }
+  return { texto, materiales: null };
+}
+
+function esUrl(texto: string): boolean {
+  return /^https?:\/\/\S+$/i.test(texto.trim());
+}
+
+// Materiales estructurados → texto plano (para descarga TXT).
+function materialesAtexto(data: MaterialesData): string {
+  const partes: string[] = ["", "==============================", "MATERIALES POR SESIÓN", "=============================="];
+  for (const s of data.sesiones) {
+    partes.push("", `SESIÓN ${s.sesion ?? ""}${s.titulo ? `: ${s.titulo}` : ""}`);
+    for (const m of s.materiales ?? []) {
+      const dest = m.para === "alumno" ? "Alumno" : "Docente";
+      partes.push(`- [${dest}] ${m.nombre ?? ""}${m.cantidad ? ` (${m.cantidad})` : ""}`);
+      if (m.contenido) partes.push(`  ${m.contenido}`);
+    }
+  }
+  return partes.join("\n");
+}
+
+// Materiales estructurados → HTML (para descarga Word).
+function materialesAhtml(data: MaterialesData): string {
+  const bloques: string[] = ["<h2>Materiales por sesión</h2>"];
+  for (const s of data.sesiones) {
+    bloques.push(`<h3>Sesión ${s.sesion ?? ""}${s.titulo ? `: ${escapeHtml(s.titulo)}` : ""}</h3>`);
+    for (const m of s.materiales ?? []) {
+      const dest = m.para === "alumno" ? "Alumno" : "Docente";
+      bloques.push(
+        `<p><strong>[${dest}] ${escapeHtml(m.nombre ?? "")}</strong>${m.cantidad ? ` (${escapeHtml(m.cantidad)})` : ""}</p>`,
+      );
+      if (m.contenido) {
+        bloques.push(
+          esUrl(m.contenido)
+            ? `<p><a href="${escapeHtml(m.contenido)}">${escapeHtml(m.contenido)}</a></p>`
+            : `<div>${renderMarkdown(m.contenido)}</div>`,
+        );
+      }
+    }
+  }
+  return bloques.join("\n");
+}
+
 // Separa "Nombre: descripción" para mostrarlo como título + detalle.
 function partirMaterial(texto: string): { titulo: string; desc: string } {
   const i = texto.indexOf(":");
@@ -437,6 +503,7 @@ export function TeacherDashboard() {
   const [copied, setCopied] = useState(false);
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveUrl, setDriveUrl] = useState<string | null>(null);
+  const [materialesData, setMaterialesData] = useState<MaterialesData | null>(null);
 
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
@@ -576,14 +643,21 @@ export function TeacherDashboard() {
     setSidebarOpen(false);
   }
 
+  // Carga una planeación: separa el bloque de materiales del texto visible.
+  function cargarPlaneacion(id: string, title: string, rawContent: string) {
+    const { texto, materiales } = splitMateriales(rawContent);
+    setDraft({ id, title, content: texto });
+    setMaterialesData(materiales);
+    setDriveUrl(null);
+    setPreviewStatus("");
+  }
+
   // Carga una planeación de ejemplo para revisar el diseño sin generar.
   function cargarEjemplo() {
-    setDraft(DEMO_DRAFT);
     setSesiones(3);
     setDuracion(50);
     setModalidad("secuencial");
-    setPreviewStatus("");
-    setDriveUrl(null);
+    cargarPlaneacion(DEMO_DRAFT.id, DEMO_DRAFT.title, DEMO_DRAFT.content);
     setTab("planeacion");
     setSidebarOpen(false);
   }
@@ -663,13 +737,7 @@ export function TeacherDashboard() {
     const draftResponse = await fetch(`/api/drafts/${payload.draftId}`);
     const draftData = await draftResponse.json();
     setLoading(false);
-    setDraft({
-      id: payload.draftId,
-      title: draftData.title ?? payload.title,
-      content: draftData.content ?? "",
-    });
-    setDriveUrl(null);
-    setPreviewStatus("");
+    cargarPlaneacion(payload.draftId, draftData.title ?? payload.title, draftData.content ?? "");
     setTab("planeacion");
   }
 
@@ -747,13 +815,14 @@ export function TeacherDashboard() {
 
   function downloadTxt() {
     if (!draft) return;
-    descargarArchivo(new Blob([draft.content], { type: "text/plain;charset=utf-8" }), "txt");
+    const texto = draft.content + (materialesData ? `\n\n${materialesAtexto(materialesData)}` : "");
+    descargarArchivo(new Blob([texto], { type: "text/plain;charset=utf-8" }), "txt");
   }
 
   // Genera un .doc (HTML compatible con Word/Google Docs) con el formato del contenido.
   function downloadWord() {
     if (!draft) return;
-    const cuerpo = renderMarkdown(draft.content);
+    const cuerpo = renderMarkdown(draft.content) + (materialesData ? materialesAhtml(materialesData) : "");
     const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${draft.title}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#111;}h1{font-size:18pt;}h2{font-size:15pt;}h3{font-size:13pt;}h4{font-size:12pt;}ul,ol{margin:6pt 0 6pt 24pt;}</style></head><body>${cuerpo}</body></html>`;
     descargarArchivo(new Blob(["﻿", html], { type: "application/msword" }), "doc");
   }
@@ -1283,7 +1352,9 @@ export function TeacherDashboard() {
             />
           ) : null}
 
-          {tab === "materiales" ? <MaterialesView draft={draft} onGo={go} onDemo={cargarEjemplo} /> : null}
+          {tab === "materiales" ? (
+            <MaterialesView draft={draft} materiales={materialesData} onGo={go} onDemo={cargarEjemplo} />
+          ) : null}
 
           {tab === "preview" ? (
             <PreviewView
@@ -1388,12 +1459,45 @@ function PlaneacionView({
 }
 
 // ─────────────────────────── Materiales ───────────────────────────
+function MaterialCard({ item }: { item: MaterialItem }) {
+  const dest = item.para === "alumno" ? "Alumno" : "Docente";
+  return (
+    <div className="material-card">
+      <div className="material-icon">
+        <Package size={18} />
+      </div>
+      <div className="material-body">
+        <div className="material-title">
+          <span className="tag neutral" style={{ marginRight: 8 }}>
+            {dest}
+          </span>
+          {item.nombre}
+          {item.cantidad ? <span className="material-tag" style={{ marginLeft: 8 }}>{item.cantidad}</span> : null}
+        </div>
+        {item.contenido ? (
+          esUrl(item.contenido) ? (
+            <a className="material-desc" href={item.contenido} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>
+              {item.contenido}
+            </a>
+          ) : (
+            <div className="material-desc" style={{ whiteSpace: "pre-wrap" }}>
+              {item.contenido}
+            </div>
+          )
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function MaterialesView({
   draft,
+  materiales,
   onGo,
   onDemo,
 }: {
   draft: { content: string } | null;
+  materiales: MaterialesData | null;
   onGo: (tab: Tab) => void;
   onDemo: () => void;
 }) {
@@ -1410,6 +1514,35 @@ function MaterialesView({
     );
   }
 
+  // Primario: materiales estructurados (bloque JSON del modelo).
+  if (materiales && materiales.sesiones.length > 0) {
+    return (
+      <div className="page-inner wide">
+        {materiales.sesiones.map((sesion, i) => {
+          const docente = (sesion.materiales ?? []).filter((m) => m.para !== "alumno");
+          const alumno = (sesion.materiales ?? []).filter((m) => m.para === "alumno");
+          return (
+            <div key={i}>
+              <div className="section-label">
+                Sesión {sesion.sesion ?? i + 1}
+                {sesion.titulo ? ` · ${sesion.titulo}` : ""}
+              </div>
+              {docente.length > 0 ? <div className="fase-label">Para el docente</div> : null}
+              {docente.map((m, j) => (
+                <MaterialCard item={m} key={`d-${j}`} />
+              ))}
+              {alumno.length > 0 ? <div className="fase-label">Para los estudiantes</div> : null}
+              {alumno.map((m, j) => (
+                <MaterialCard item={m} key={`a-${j}`} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Respaldo: parseo del texto (por si el bloque JSON no vino).
   const porSesion = materialesPorSesion(draft.content);
   const generales = materialesGenerales(draft.content);
 
@@ -1418,7 +1551,7 @@ function MaterialesView({
       <div className="page-inner wide">
         <div className="card">
           <p className="hint" style={{ marginTop: 0 }}>
-            La planeación no incluyó materiales detectables por sección. Revísalos en{" "}
+            La planeación no incluyó materiales detectables. Revísalos en{" "}
             <strong style={{ color: "var(--text)" }}>Planeación</strong> o en{" "}
             <strong style={{ color: "var(--text)" }}>Preview</strong>.
           </p>

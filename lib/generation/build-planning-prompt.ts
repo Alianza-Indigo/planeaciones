@@ -594,19 +594,21 @@ EVALUACION SUMATIVA DEL PROYECTO
 - Criterios de Evaluacion: [Criterios especificos asociados a ${pdaStr}]
 - Instrumentos: [Lista de instrumentos a utilizar]
 
-MATERIALES COMPLEMENTARIOS (APENDICE OBLIGATORIO - NO OMITIR)
--------------------------------------------------------------
-Generar AQUI, de forma completa, TODOS los materiales mencionados en las sesiones. Este apéndice es obligatorio y NO debe omitirse ni resumirse. Incluir, segun corresponda:
-- Textos y cuentos completos mencionados (texto íntegro, no resumen)
-- Organizadores gráficos descritos con su formato visual
-- Tarjetas de apoyo con su contenido específico
-- Bancos de palabras organizados por categorías
-- Instrumentos de evaluación detallados (listas de cotejo y rúbricas completas)
-- Instrucciones de uso para el docente
-- Para cada imagen sugerida: el prompt exacto para generarla
-- Para cada video sugerido: el URL de YouTube en español
-- Adaptaciones imprimibles por perfil neurológico del grupo: ${perfiles}
+MATERIALES POR SESION (BLOQUE OBLIGATORIO AL FINAL DE TODO)
+-----------------------------------------------------------
+Después del documento, agrega los materiales de CADA sesión, separados por destinatario (docente/alumno), con su CONTENIDO COMPLETO listo para usar. Reglas del contenido:
+- Si el material es una lectura, cuento o historia: escribe el TEXTO ÍNTEGRO (completo, no un resumen) en el campo "contenido".
+- Si es un video: en "contenido" pon el título y el URL real de YouTube en español.
+- Si es un organizador gráfico, tarjeta o banco de palabras: incluye su contenido detallado en "contenido".
+- Si es un instrumento de evaluación: inclúyelo completo (lista de cotejo o rúbrica) en "contenido".
+- Indica "cantidad" (ej: "1 por alumno", "1 por equipo de 4").
+- Atiende los perfiles neurológicos del grupo: ${perfiles}.
 
-Cierre con: 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas y el apéndice de materiales complementarios.'
+Devuelve EXACTAMENTE este bloque entre los marcadores, con JSON válido y SIN texto después del bloque:
+<<<MATERIALES_JSON>>>
+{"sesiones":[{"sesion":1,"titulo":"Título de la sesión 1","materiales":[{"para":"docente","nombre":"Cuento: ...","tipo":"lectura","cantidad":"1","contenido":"Texto íntegro del cuento..."},{"para":"alumno","nombre":"Hoja de trabajo ...","tipo":"organizador","cantidad":"1 por alumno","contenido":"Descripción/contenido del material"}]}]}
+<<<FIN_MATERIALES_JSON>>>
+
+Cierre el documento (antes del bloque JSON) con: 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas.'
 `;
 }
