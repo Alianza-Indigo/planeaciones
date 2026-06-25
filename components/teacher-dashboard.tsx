@@ -735,15 +735,27 @@ export function TeacherDashboard() {
     win.print();
   }
 
-  function downloadMarkdown() {
+  function descargarArchivo(blob: Blob, extension: string) {
     if (!draft) return;
-    const blob = new Blob([draft.content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${draft.title.replace(/\s+/g, "-")}.md`;
+    a.download = `${draft.title.replace(/\s+/g, "-")}.${extension}`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function downloadTxt() {
+    if (!draft) return;
+    descargarArchivo(new Blob([draft.content], { type: "text/plain;charset=utf-8" }), "txt");
+  }
+
+  // Genera un .doc (HTML compatible con Word/Google Docs) con el formato del contenido.
+  function downloadWord() {
+    if (!draft) return;
+    const cuerpo = renderMarkdown(draft.content);
+    const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${draft.title}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#111;}h1{font-size:18pt;}h2{font-size:15pt;}h3{font-size:13pt;}h4{font-size:12pt;}ul,ol{margin:6pt 0 6pt 24pt;}</style></head><body>${cuerpo}</body></html>`;
+    descargarArchivo(new Blob(["﻿", html], { type: "application/msword" }), "doc");
   }
 
   return (
@@ -1282,7 +1294,8 @@ export function TeacherDashboard() {
               onSave={savePreview}
               onCopy={copyContent}
               onPrint={printContent}
-              onDownload={downloadMarkdown}
+              onDownloadTxt={downloadTxt}
+              onDownloadWord={downloadWord}
               onDrive={exportToDrive}
               driveLoading={driveLoading}
               driveUrl={driveUrl}
@@ -1476,7 +1489,8 @@ function PreviewView({
   onSave,
   onCopy,
   onPrint,
-  onDownload,
+  onDownloadTxt,
+  onDownloadWord,
   onDrive,
   driveLoading,
   driveUrl,
@@ -1490,7 +1504,8 @@ function PreviewView({
   onSave: () => void;
   onCopy: () => void;
   onPrint: () => void;
-  onDownload: () => void;
+  onDownloadTxt: () => void;
+  onDownloadWord: () => void;
   onDrive: () => void;
   driveLoading: boolean;
   driveUrl: string | null;
@@ -1527,9 +1542,13 @@ function PreviewView({
             <Printer size={13} />
             Imprimir
           </button>
-          <button className="btn-icon-sm" type="button" onClick={onDownload}>
+          <button className="btn-icon-sm" type="button" onClick={onDownloadTxt}>
             <Download size={13} />
-            Descargar
+            TXT
+          </button>
+          <button className="btn-icon-sm" type="button" onClick={onDownloadWord}>
+            <Download size={13} />
+            Word
           </button>
           <button className="btn-icon-sm primary" type="button" onClick={onDrive} disabled={driveLoading}>
             {driveLoading ? <Loader2 size={13} className="spin" /> : <UploadCloud size={13} />}
