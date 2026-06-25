@@ -48,7 +48,12 @@ export const authOptions: NextAuthOptions = {
       const dbUser = user as typeof user & { role: "USER" | "ADMIN" };
       if (session.user) {
         session.user.id = user.id;
-        session.user.role = dbUser.role;
+        // ADMIN_EMAILS es la fuente de verdad: si el correo está en la lista
+        // se otorga ADMIN en vivo, sin depender de cuándo se inició sesión.
+        const esAdminPorCorreo = session.user.email
+          ? getAdminEmails().includes(session.user.email.toLowerCase())
+          : false;
+        session.user.role = esAdminPorCorreo ? "ADMIN" : dbUser.role;
       }
 
       return session;
