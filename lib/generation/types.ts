@@ -54,6 +54,7 @@ export type PlanningInput = z.infer<typeof planningInputSchema>;
 export type GeneratedPlanning = {
   title: string;
   content: string;
+  materiales?: unknown;
   providerRequestId?: string;
   model?: string;
   tokensIn?: number;

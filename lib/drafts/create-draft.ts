@@ -22,6 +22,7 @@ export async function createTemporaryDraft(params: {
         fase: params.input.fase,
         proyecto: params.input.proyecto,
         sesiones: params.input.sesiones,
+        materiales: (params.planning.materiales ?? null) as object | null,
       },
       expiresAt,
     },

@@ -24,6 +24,14 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { Contenido } from "@/lib/curriculum/types";
+import {
+  esUrl,
+  limpiarDocumento,
+  materialesAtexto,
+  splitMateriales,
+  type MaterialesData,
+  type MaterialItem,
+} from "@/lib/generation/materiales";
 
 type Tab = "generacion" | "planeacion" | "materiales" | "preview";
 
@@ -381,72 +389,6 @@ function materialesGenerales(content: string): string[] {
   return [...new Set(items)];
 }
 
-// ── Materiales estructurados (bloque JSON que emite el modelo) ──
-type MaterialItem = { para?: string; nombre?: string; tipo?: string; cantidad?: string; contenido?: string };
-type MaterialesSesion = { sesion?: number; titulo?: string; materiales?: MaterialItem[] };
-type MaterialesData = { sesiones: MaterialesSesion[] };
-
-// Extrae el bloque <<<MATERIALES_JSON>>> y devuelve el texto sin el bloque + los datos.
-function splitMateriales(content: string): { texto: string; materiales: MaterialesData | null } {
-  const match = content.match(/<<<MATERIALES_JSON>>>([\s\S]*?)<<<FIN_MATERIALES_JSON>>>/);
-  if (!match) return { texto: content, materiales: null };
-  const texto = content.replace(match[0], "").trim();
-  let raw = match[1].trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try {
-    const data = JSON.parse(raw) as MaterialesData;
-    if (data && Array.isArray(data.sesiones)) return { texto, materiales: data };
-  } catch {
-    // JSON inválido o truncado: se ignora y queda el respaldo de texto.
-  }
-  return { texto, materiales: null };
-}
-
-function esUrl(texto: string): boolean {
-  return /^https?:\/\/\S+$/i.test(texto.trim());
-}
-
-// Quita cualquier preámbulo (validaciones/blindajes filtrados) antes del documento.
-function limpiarDocumento(texto: string): string {
-  const i = texto.search(/PLANEACI[OÓ]N\s+DID[AÁ]CTICA/i);
-  return i > 0 ? texto.slice(i).trim() : texto.trim();
-}
-
-// Materiales estructurados → texto plano (para descarga TXT).
-function materialesAtexto(data: MaterialesData): string {
-  const partes: string[] = ["", "==============================", "MATERIALES POR SESIÓN", "=============================="];
-  for (const s of data.sesiones) {
-    partes.push("", `SESIÓN ${s.sesion ?? ""}${s.titulo ? `: ${s.titulo}` : ""}`);
-    for (const m of s.materiales ?? []) {
-      const dest = m.para === "alumno" ? "Alumno" : "Docente";
-      partes.push(`- [${dest}] ${m.nombre ?? ""}${m.cantidad ? ` (${m.cantidad})` : ""}`);
-      if (m.contenido) partes.push(`  ${m.contenido}`);
-    }
-  }
-  return partes.join("\n");
-}
-
-// Materiales estructurados → HTML (para descarga Word).
-function materialesAhtml(data: MaterialesData): string {
-  const bloques: string[] = ["<h2>Materiales por sesión</h2>"];
-  for (const s of data.sesiones) {
-    bloques.push(`<h3>Sesión ${s.sesion ?? ""}${s.titulo ? `: ${escapeHtml(s.titulo)}` : ""}</h3>`);
-    for (const m of s.materiales ?? []) {
-      const dest = m.para === "alumno" ? "Alumno" : "Docente";
-      bloques.push(
-        `<p><strong>[${dest}] ${escapeHtml(m.nombre ?? "")}</strong>${m.cantidad ? ` (${escapeHtml(m.cantidad)})` : ""}</p>`,
-      );
-      if (m.contenido) {
-        bloques.push(
-          esUrl(m.contenido)
-            ? `<p><a href="${escapeHtml(m.contenido)}">${escapeHtml(m.contenido)}</a></p>`
-            : `<div>${renderMarkdown(m.contenido)}</div>`,
-        );
-      }
-    }
-  }
-  return bloques.join("\n");
-}
-
 // Separa "Nombre: descripción" para mostrarlo como título + detalle.
 function partirMaterial(texto: string): { titulo: string; desc: string } {
   const i = texto.indexOf(":");
@@ -649,11 +591,20 @@ export function TeacherDashboard() {
     setSidebarOpen(false);
   }
 
-  // Carga una planeación: separa el bloque de materiales del texto visible.
-  function cargarPlaneacion(id: string, title: string, rawContent: string) {
-    const { texto, materiales } = splitMateriales(rawContent);
-    setDraft({ id, title, content: limpiarDocumento(texto) });
-    setMaterialesData(materiales);
+  // Carga una planeación. Si el servidor ya entregó los materiales estructurados
+  // (metadata), el contenido ya viene limpio y con los materiales en prosa. Si no
+  // (p. ej. el ejemplo), se separa el bloque JSON y se arma el contenido legible.
+  function cargarPlaneacion(id: string, title: string, rawContent: string, materialesServidor?: MaterialesData | null) {
+    if (materialesServidor) {
+      setDraft({ id, title, content: rawContent.trim() });
+      setMaterialesData(materialesServidor);
+    } else {
+      const { texto, materiales } = splitMateriales(rawContent);
+      const plan = limpiarDocumento(texto);
+      const content = materiales ? `${plan}\n\n${materialesAtexto(materiales)}` : plan;
+      setDraft({ id, title, content });
+      setMaterialesData(materiales);
+    }
     setDriveUrl(null);
     setPreviewStatus("");
   }
@@ -743,7 +694,13 @@ export function TeacherDashboard() {
     const draftResponse = await fetch(`/api/drafts/${payload.draftId}`);
     const draftData = await draftResponse.json();
     setLoading(false);
-    cargarPlaneacion(payload.draftId, draftData.title ?? payload.title, draftData.content ?? "");
+    const materialesServidor = (draftData?.metadata?.materiales ?? null) as MaterialesData | null;
+    cargarPlaneacion(
+      payload.draftId,
+      draftData.title ?? payload.title,
+      draftData.content ?? "",
+      materialesServidor && Array.isArray(materialesServidor.sesiones) ? materialesServidor : null,
+    );
     setTab("planeacion");
   }
 
@@ -821,14 +778,13 @@ export function TeacherDashboard() {
 
   function downloadTxt() {
     if (!draft) return;
-    const texto = draft.content + (materialesData ? `\n\n${materialesAtexto(materialesData)}` : "");
-    descargarArchivo(new Blob([texto], { type: "text/plain;charset=utf-8" }), "txt");
+    descargarArchivo(new Blob([draft.content], { type: "text/plain;charset=utf-8" }), "txt");
   }
 
   // Genera un .doc (HTML compatible con Word/Google Docs) con el formato del contenido.
   function downloadWord() {
     if (!draft) return;
-    const cuerpo = renderMarkdown(draft.content) + (materialesData ? materialesAhtml(materialesData) : "");
+    const cuerpo = renderMarkdown(draft.content);
     const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${draft.title}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#111;}h1{font-size:18pt;}h2{font-size:15pt;}h3{font-size:13pt;}h4{font-size:12pt;}ul,ol{margin:6pt 0 6pt 24pt;}</style></head><body>${cuerpo}</body></html>`;
     descargarArchivo(new Blob(["﻿", html], { type: "application/msword" }), "doc");
   }
