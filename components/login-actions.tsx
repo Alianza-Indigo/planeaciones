@@ -23,7 +23,7 @@ export function LoginActions() {
   }
 
   return (
-    <button className="button primary" type="button" onClick={() => signIn("google", { callbackUrl: "/planner" })}>
+    <button className="button primary" type="button" onClick={() => signIn("google", { callbackUrl: "/" })}>
       <LogIn size={17} />
       Entrar con Google
     </button>

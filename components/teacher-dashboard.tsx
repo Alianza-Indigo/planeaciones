@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   Layers,
+  LayoutDashboard,
   Loader2,
   LogIn,
   LogOut,
@@ -301,8 +302,9 @@ function parseMateriales(content: string): string[] {
 }
 
 export function TeacherDashboard() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const autenticado = status === "authenticated";
+  const esAdmin = session?.user?.role === "ADMIN";
 
   const [tab, setTab] = useState<Tab>("generacion");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -679,13 +681,19 @@ export function TeacherDashboard() {
             );
           })}
           <div className="nav-spacer" />
+          {esAdmin ? (
+            <a className="nav-item" href="/admin">
+              <LayoutDashboard size={16} />
+              Panel admin
+            </a>
+          ) : null}
           {autenticado ? (
             <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
               <LogOut size={16} />
               Salir
             </button>
           ) : (
-            <button className="nav-item" type="button" onClick={() => signIn("google", { callbackUrl: "/planner" })}>
+            <button className="nav-item" type="button" onClick={() => signIn("google", { callbackUrl: "/" })}>
               <LogIn size={16} />
               Iniciar sesión
             </button>
@@ -1126,7 +1134,7 @@ export function TeacherDashboard() {
                   <button
                     className="button primary"
                     type="button"
-                    onClick={() => signIn("google", { callbackUrl: "/planner" })}
+                    onClick={() => signIn("google", { callbackUrl: "/" })}
                   >
                     <LogIn size={16} />
                     Iniciar sesión con Google
