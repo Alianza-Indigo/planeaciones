@@ -435,6 +435,8 @@ export function TeacherDashboard() {
   const [draft, setDraft] = useState<{ id: string; title: string; content: string } | null>(null);
   const [previewStatus, setPreviewStatus] = useState("");
   const [copied, setCopied] = useState(false);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveUrl, setDriveUrl] = useState<string | null>(null);
 
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
@@ -581,6 +583,7 @@ export function TeacherDashboard() {
     setDuracion(50);
     setModalidad("secuencial");
     setPreviewStatus("");
+    setDriveUrl(null);
     setTab("planeacion");
     setSidebarOpen(false);
   }
@@ -665,6 +668,8 @@ export function TeacherDashboard() {
       title: draftData.title ?? payload.title,
       content: draftData.content ?? "",
     });
+    setDriveUrl(null);
+    setPreviewStatus("");
     setTab("planeacion");
   }
 
@@ -684,19 +689,31 @@ export function TeacherDashboard() {
   }
 
   async function exportToDrive() {
-    if (!draft) return;
+    if (!draft || driveLoading) return;
     if (esDemo) {
       setPreviewStatus("Es una planeación de ejemplo; genera una real para exportar.");
       return;
     }
+    setDriveLoading(true);
     setPreviewStatus("Enviando a Google Drive…");
-    const response = await fetch("/api/drive/export", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ draftId: draft.id }),
-    });
-    const payload = await response.json();
-    setPreviewStatus(response.ok ? "Exportado a Google Drive." : payload.error ?? "No se pudo exportar.");
+    try {
+      const response = await fetch("/api/drive/export", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ draftId: draft.id }),
+      });
+      const payload = await response.json().catch(() => ({}) as { error?: string; url?: string });
+      if (response.ok) {
+        setDriveUrl(payload.url ?? null);
+        setPreviewStatus("Exportado a Google Drive.");
+      } else {
+        setPreviewStatus(payload.error ?? `No se pudo exportar (HTTP ${response.status}).`);
+      }
+    } catch {
+      setPreviewStatus("No se pudo conectar con el servidor para exportar. Intenta de nuevo.");
+    } finally {
+      setDriveLoading(false);
+    }
   }
 
   function copyContent() {
@@ -1267,6 +1284,8 @@ export function TeacherDashboard() {
               onPrint={printContent}
               onDownload={downloadMarkdown}
               onDrive={exportToDrive}
+              driveLoading={driveLoading}
+              driveUrl={driveUrl}
               onGo={go}
               onDemo={cargarEjemplo}
             />
@@ -1459,6 +1478,8 @@ function PreviewView({
   onPrint,
   onDownload,
   onDrive,
+  driveLoading,
+  driveUrl,
   onGo,
   onDemo,
 }: {
@@ -1471,6 +1492,8 @@ function PreviewView({
   onPrint: () => void;
   onDownload: () => void;
   onDrive: () => void;
+  driveLoading: boolean;
+  driveUrl: string | null;
   onGo: (tab: Tab) => void;
   onDemo: () => void;
 }) {
@@ -1508,15 +1531,23 @@ function PreviewView({
             <Download size={13} />
             Descargar
           </button>
-          <button className="btn-icon-sm primary" type="button" onClick={onDrive}>
-            <UploadCloud size={13} />
-            Drive
+          <button className="btn-icon-sm primary" type="button" onClick={onDrive} disabled={driveLoading}>
+            {driveLoading ? <Loader2 size={13} className="spin" /> : <UploadCloud size={13} />}
+            {driveLoading ? "Enviando…" : "Drive"}
           </button>
         </div>
       </div>
       {status ? (
         <p className="hint" style={{ marginBottom: 8 }}>
           {status}
+          {driveUrl ? (
+            <>
+              {" "}
+              <a href={driveUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>
+                Abrir en Drive ↗
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
       <textarea
