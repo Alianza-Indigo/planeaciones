@@ -79,8 +79,6 @@ const TESTIMONIOS = [
 const LOGOS = [
   { big: "SEP", small: "Secretaría de Educación Pública" },
   { big: "NEM", small: "Nueva Escuela Mexicana" },
-  { big: "UNAM", small: "" },
-  { big: "Tec de Monterrey", small: "" },
   { big: "Red de Colegios", small: "Alianza Índigo" },
 ];
 
