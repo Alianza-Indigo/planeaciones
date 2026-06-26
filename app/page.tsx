@@ -1,12 +1,13 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
-import { getSession } from "@/lib/auth";
+import { LandingPage } from "@/components/landing-page";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "ADIA — Asistente Docente de Inteligencia Artificial",
+  description:
+    "ADIA genera planeaciones completas alineadas al NEM con guion docente, materiales, evaluación e inclusión neurodivergente integrada.",
+};
 
-export default async function HomePage() {
-  const session = await getSession();
-  // Los administradores aterrizan en su panel; el resto en el generador.
-  if (session?.user?.role === "ADMIN") redirect("/admin");
-  redirect("/planner");
+export default function HomePage() {
+  return <LandingPage />;
 }
