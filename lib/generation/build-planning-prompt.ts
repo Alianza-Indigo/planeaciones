@@ -596,21 +596,36 @@ EVALUACION SUMATIVA DEL PROYECTO
 - Criterios de Evaluacion: [Criterios especificos asociados a ${pdaStr}]
 - Instrumentos: [Lista de instrumentos a utilizar]
 
-MATERIALES POR SESION (BLOQUE OBLIGATORIO AL FINAL DE TODO)
------------------------------------------------------------
-Después del documento, agrega los materiales de CADA sesión (al menos 2 por sesión cuando sea pertinente, cubriendo docente y alumno), separados por destinatario, con su CONTENIDO COMPLETO listo para usar y de ALTA CALIDAD. Reglas del contenido:
-- Si el material es una lectura, cuento o historia: escribe un cuento ORIGINAL y COMPLETO de 250 a 450 palabras, con inicio, nudo y desenlace claros, personajes con nombre, diálogos, y vocabulario adecuado al grado; debe estar vinculado al tema y al PDA, y modelar el aprendizaje esperado. PROHIBIDO entregar 1-3 oraciones, un resumen o un esbozo.
-- Si es un video: en "contenido" pon el título y el URL real de YouTube en español.
-- Si es un organizador gráfico, tarjeta o banco de palabras: incluye su contenido detallado y completo en "contenido" (las palabras, las preguntas, las columnas reales).
-- Si es un instrumento de evaluación: inclúyelo completo (lista de cotejo o rúbrica con sus indicadores/criterios).
-- Indica "cantidad" (ej: "1 por alumno", "1 por equipo de 4").
-- Atiende los perfiles neurológicos del grupo: ${perfiles}.
-
-Devuelve EXACTAMENTE este bloque entre los marcadores, con JSON válido y SIN texto después del bloque:
-<<<MATERIALES_JSON>>>
-{"sesiones":[{"sesion":1,"titulo":"Título de la sesión 1","materiales":[{"para":"docente","nombre":"Cuento: ...","tipo":"lectura","cantidad":"1","contenido":"Texto íntegro del cuento..."},{"para":"alumno","nombre":"Hoja de trabajo ...","tipo":"organizador","cantidad":"1 por alumno","contenido":"Descripción/contenido del material"}]}]}
-<<<FIN_MATERIALES_JSON>>>
-
-Cierre el documento (antes del bloque JSON) con: 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas.'
+Cierre el documento con: 'VERIFICACION FINAL: Se han generado ${sesiones} sesiones completas.'
 `;
+}
+
+// Prompt dedicado para generar SOLO los materiales por sesión (segunda llamada),
+// para que no compitan por tokens con el plan ni se trunquen.
+export function buildMaterialesPrompt(input: PlanningInput, planContent: string): string {
+  const { nivel, gradoLabel } = parseNivelGrado(input.grado);
+  const perfiles = perfilesNeurologicos(input);
+  return `Eres el Ingeniero de Inclusion Pedagogica de ADIA. A partir de la siguiente planeacion didactica ya generada, produce los MATERIALES por sesion, listos para imprimir/usar.
+
+CONTEXTO
+Nivel: ${nivel} ${gradoLabel} · Tema: ${input.proyecto} · Sesiones: ${input.sesiones} · Perfiles neurologicos del grupo: ${perfiles}
+
+PLANEACION GENERADA (usala para saber qué materiales se mencionan en cada sesion):
+"""
+${planContent}
+"""
+
+INSTRUCCIONES
+- Devuelve los materiales de CADA una de las ${input.sesiones} sesiones (al menos 2 por sesion cuando sea pertinente), separados por destinatario (docente/alumno).
+- CONTENIDO COMPLETO y de ALTA CALIDAD en el campo "contenido":
+  - Lectura/cuento/historia: escribe un cuento ORIGINAL y COMPLETO de 250 a 450 palabras, con inicio, nudo y desenlace, personajes con nombre, dialogos y vocabulario adecuado al grado, vinculado al tema y al PDA. PROHIBIDO resumenes o 1-3 oraciones.
+  - Video: titulo + URL real de YouTube en español.
+  - Organizador/tarjeta/banco de palabras: su contenido detallado (las palabras, preguntas, columnas reales).
+  - Instrumento de evaluacion: completo (lista de cotejo o rubrica con indicadores/criterios).
+- Indica "cantidad" (ej: "1 por alumno", "1 por equipo de 4"). "tipo" permitido: lectura, video, organizador, tarjeta, evaluacion, otro.
+
+RESPONDE UNICAMENTE con un bloque JSON valido entre los marcadores, sin texto antes ni despues:
+<<<MATERIALES_JSON>>>
+{"sesiones":[{"sesion":1,"titulo":"...","materiales":[{"para":"docente","nombre":"...","tipo":"lectura","cantidad":"1","contenido":"..."},{"para":"alumno","nombre":"...","tipo":"organizador","cantidad":"1 por alumno","contenido":"..."}]}]}
+<<<FIN_MATERIALES_JSON>>>`;
 }
