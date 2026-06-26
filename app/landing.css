@@ -120,7 +120,7 @@
 }
 
 .lp-brand-name {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -0.3px;
@@ -193,7 +193,7 @@
 }
 
 .lp-h1 {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: clamp(2.2rem, 4.4vw, 3.5rem);
   line-height: 1.08;
@@ -320,7 +320,7 @@
 .lp-mock-side b {
   color: #fff;
   font-size: 9px;
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   text-align: center;
   margin-bottom: 4px;
 }
@@ -440,7 +440,7 @@
 }
 
 .lp-section-title {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   text-align: center;
@@ -510,7 +510,7 @@
 }
 
 .lp-compare h2 {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: clamp(1.7rem, 3vw, 2.3rem);
   line-height: 1.15;
@@ -724,7 +724,7 @@
 }
 
 .lp-plan h3 {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-size: 20px;
   font-weight: 800;
   margin: 0 0 6px;
@@ -737,7 +737,7 @@
 }
 
 .lp-price {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: 40px;
   color: var(--lp-purple);
@@ -804,7 +804,7 @@
 }
 
 .lp-cta h2 {
-  font-family: var(--font-syne), Syne, sans-serif;
+  font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   margin: 0 0 12px;
