@@ -176,6 +176,11 @@ p {
   top: 56px;
   height: calc(100vh - 56px);
   flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.nav-spacer {
+  min-height: 0;
 }
 
 .nav-label {
