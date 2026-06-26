@@ -60,6 +60,13 @@ export function AdminShell({ children, email }: { children: React.ReactNode; ema
 
       <div className="app-body">
         <aside className="sidebar" data-open={open}>
+          <div className="sidebar-brand">
+            <div className="logo-mark">AI</div>
+            <div>
+              <div className="sidebar-brand-name">ADIA</div>
+              <div className="sidebar-brand-subtitle">Panel de administración</div>
+            </div>
+          </div>
           <div className="nav-label">Administración</div>
           {navLinks.map((link) => {
             const Icon = link.icon;
@@ -82,6 +89,11 @@ export function AdminShell({ children, email }: { children: React.ReactNode; ema
           })}
 
           <div className="nav-spacer" />
+
+          <Link className="sidebar-cta" href="/planner" onClick={() => setOpen(false)}>
+            <ExternalLink size={16} />
+            Ir a la app
+          </Link>
 
           <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
             <LogOut size={16} />

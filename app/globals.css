@@ -1533,6 +1533,34 @@ textarea {
   min-height: 78px;
 }
 
+.sidebar-brand .logo-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 20px;
+}
+
+.sidebar-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: linear-gradient(135deg, #24119a 0%, #563bd5 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 12px 22px rgba(46, 27, 170, 0.18);
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.sidebar-cta:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+
 .sidebar-logo {
   width: 72px;
   height: 72px;
