@@ -1,23 +1,26 @@
 /* ===========================================================
-   Landing ADIA — tema claro, índigo desvanecido + acentos dorados.
+   Landing ADIA — tema claro, índigo azul + lavanda suave.
    Estilos scopeados bajo .lp, independientes del dashboard.
    =========================================================== */
 .lp {
-  --lp-purple: #1b1f5a;   /* índigo profundo */
-  --lp-bright: #2a3080;   /* índigo medio (interactivo) */
-  --lp-ind3: #3d4499;     /* índigo claro */
-  --lp-lila: #7077c4;     /* índigo desvanecido */
-  --lp-lila-2: #ecedf8;   /* tinte índigo muy claro */
-  --lp-bg: #f7f8fd;
-  --lp-night: #0d0f33;
-  --lp-text: #15173a;
-  --lp-text-2: #5b5e82;
-  --lp-border: #e6e8f6;
-  --lp-gold: #e7b85c;
-  --lp-gold-d: #c2912f;   /* oro oscuro (texto sobre claro) */
+  --lp-purple: #11185f;   /* índigo profundo, más azul que morado */
+  --lp-bright: #302fc2;   /* índigo activo */
+  --lp-ind3: #514cff;     /* acento principal */
+  --lp-lila: #8d96ff;     /* lavanda azulada */
+  --lp-lila-2: #f0f2ff;   /* tinte lavanda muy claro */
+  --lp-bg: #fbfbff;
+  --lp-night: #070d3e;
+  --lp-text: #11174f;
+  --lp-text-2: #555d86;
+  --lp-border: #e2e5fb;
+  --lp-gold: #6f66ff;     /* acento violeta-azul para detalles */
+  --lp-gold-d: #4038c7;
   --lp-radius: 22px;
 
-  background: var(--lp-bg);
+  background:
+    radial-gradient(circle at 82% 7%, rgba(141, 150, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 12% 18%, rgba(81, 76, 255, 0.08), transparent 28%),
+    var(--lp-bg);
   color: var(--lp-text);
   min-height: 100vh;
   font-family: var(--font-inter), Inter, system-ui, sans-serif;
@@ -56,14 +59,14 @@
 }
 
 .lp-btn-primary {
-  background: linear-gradient(135deg, var(--lp-ind3), var(--lp-purple));
+  background: linear-gradient(135deg, #625cff, var(--lp-bright));
   color: #fff;
-  box-shadow: 0 10px 24px -8px rgba(42, 48, 128, 0.5);
+  box-shadow: 0 14px 28px -10px rgba(48, 47, 194, 0.52);
 }
 
 .lp-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 34px -8px rgba(42, 48, 128, 0.6);
+  box-shadow: 0 18px 36px -10px rgba(48, 47, 194, 0.62);
 }
 
 .lp-btn-outline {
@@ -77,16 +80,15 @@
   transform: translateY(-2px);
 }
 
-/* CTA final: botón dorado sobre fondo índigo noche */
 .lp-btn-white {
-  background: linear-gradient(135deg, var(--lp-gold), #d8a847);
-  color: #3a2c06;
-  box-shadow: 0 12px 28px -10px rgba(231, 184, 92, 0.6);
+  background: #fff;
+  color: var(--lp-bright);
+  box-shadow: 0 16px 34px -18px rgba(255, 255, 255, 0.75);
 }
 
 .lp-btn-white:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 36px -10px rgba(231, 184, 92, 0.75);
+  box-shadow: 0 22px 40px -18px rgba(255, 255, 255, 0.9);
 }
 
 /* ── Header ── */
@@ -94,7 +96,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(247, 248, 253, 0.82);
+  background: rgba(251, 251, 255, 0.86);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--lp-border);
 }
@@ -117,7 +119,7 @@
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: linear-gradient(135deg, var(--lp-bright), var(--lp-lila));
+  background: linear-gradient(135deg, var(--lp-bright), var(--lp-ind3));
   display: grid;
   place-items: center;
   color: #fff;
@@ -125,13 +127,12 @@
   position: relative;
 }
 
-/* acento dorado en el logo */
 .lp-logo::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 11px;
-  border: 1.5px solid rgba(231, 184, 92, 0.55);
+  border: 1.5px solid rgba(164, 171, 255, 0.7);
 }
 
 .lp-brand-name {
@@ -169,7 +170,7 @@
 /* ── Hero ── */
 .lp-hero {
   position: relative;
-  padding: 70px 0 40px;
+  padding: 54px 0 42px;
 }
 
 .lp-hero::before {
@@ -179,7 +180,7 @@
   right: -120px;
   width: 720px;
   height: 720px;
-  background: radial-gradient(circle, rgba(91, 98, 180, 0.26), transparent 60%);
+  background: radial-gradient(circle, rgba(141, 150, 255, 0.34), transparent 60%);
   z-index: 0;
   pointer-events: none;
 }
@@ -191,7 +192,7 @@
   left: -160px;
   width: 520px;
   height: 520px;
-  background: radial-gradient(circle, rgba(231, 184, 92, 0.16), transparent 62%);
+  background: radial-gradient(circle, rgba(81, 76, 255, 0.12), transparent 62%);
   z-index: 0;
   pointer-events: none;
 }
@@ -200,8 +201,8 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: 40px;
+  grid-template-columns: 0.92fr 1.18fr;
+  gap: 36px;
   align-items: center;
 }
 
@@ -209,9 +210,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--lp-lila-2);
-  color: var(--lp-purple);
-  border: 1px solid #dadcf2;
+  background: #f2f3ff;
+  color: var(--lp-bright);
+  border: 1px solid #dfe2ff;
   font-size: 13px;
   font-weight: 600;
   padding: 7px 14px;
@@ -229,7 +230,7 @@
 }
 
 .lp-grad {
-  background: linear-gradient(90deg, var(--lp-ind3), var(--lp-lila));
+  background: linear-gradient(90deg, var(--lp-bright), #6f66ff 58%, var(--lp-lila));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -289,7 +290,33 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 360px;
+  min-height: 430px;
+}
+
+.lp-hero-art::before {
+  content: "";
+  position: absolute;
+  width: min(92%, 660px);
+  aspect-ratio: 1 / 0.68;
+  border: 28px solid rgba(141, 150, 255, 0.18);
+  border-left-color: rgba(81, 76, 255, 0.08);
+  border-bottom-color: rgba(81, 76, 255, 0.22);
+  border-radius: 50%;
+  transform: rotate(-12deg);
+  filter: blur(1px);
+  z-index: 0;
+}
+
+.lp-hero-art::after {
+  content: "";
+  position: absolute;
+  bottom: 12%;
+  width: min(86%, 620px);
+  height: 76px;
+  background: linear-gradient(90deg, transparent, rgba(98, 92, 255, 0.42), rgba(141, 150, 255, 0.36), transparent);
+  border-radius: 999px;
+  filter: blur(12px);
+  z-index: 1;
 }
 
 .lp-glow-ring {
@@ -297,8 +324,8 @@
   bottom: 10%;
   width: 90%;
   height: 60%;
-  background: radial-gradient(ellipse at center, rgba(61, 68, 153, 0.42), transparent 65%);
-  filter: blur(10px);
+  background: radial-gradient(ellipse at center, rgba(98, 92, 255, 0.38), transparent 65%);
+  filter: blur(12px);
   z-index: 0;
 }
 
@@ -306,11 +333,11 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 540px;
+  max-width: 620px;
   background: #fff;
   border: 1px solid var(--lp-border);
   border-radius: 16px;
-  box-shadow: 0 40px 80px -30px rgba(27, 31, 90, 0.5);
+  box-shadow: 0 42px 86px -30px rgba(17, 24, 95, 0.46);
   overflow: hidden;
   transform: perspective(1600px) rotateY(-9deg) rotateX(3deg);
 }
@@ -319,7 +346,7 @@
   display: flex;
   gap: 6px;
   padding: 10px 12px;
-  background: #eef0fa;
+  background: #f2f3ff;
   border-bottom: 1px solid var(--lp-border);
 }
 
@@ -333,7 +360,7 @@
 .lp-mock {
   display: grid;
   grid-template-columns: 64px 1fr;
-  min-height: 280px;
+  min-height: 320px;
 }
 
 .lp-mock-side {
@@ -360,7 +387,7 @@
 }
 
 .lp-mock-side span.on {
-  background: var(--lp-gold);
+  background: #aab0ff;
 }
 
 .lp-mock-main {
@@ -384,8 +411,8 @@
 }
 
 .lp-mock-steps em.on {
-  background: var(--lp-bright);
-  border-color: var(--lp-bright);
+  background: var(--lp-ind3);
+  border-color: var(--lp-ind3);
 }
 
 .lp-mock-steps i {
@@ -409,7 +436,7 @@
 }
 
 .lp-mock-cards div:first-child {
-  border-top: 3px solid var(--lp-gold);
+  border-top: 3px solid var(--lp-ind3);
 }
 
 .lp-mock-rows {
@@ -439,26 +466,28 @@
   display: grid;
   place-items: center;
   color: #fff;
-  box-shadow: 0 16px 30px -10px rgba(27, 31, 90, 0.55);
+  box-shadow: 0 18px 34px -12px rgba(48, 47, 194, 0.52);
   animation: lp-bob 5s ease-in-out infinite;
 }
 
 .lp-float.brain {
   top: 4%;
   left: -2%;
-  background: linear-gradient(135deg, var(--lp-bright), var(--lp-lila));
+  background: linear-gradient(135deg, #7c86ff, #e8ebff);
+  color: var(--lp-bright);
 }
 .lp-float.book {
   bottom: 6%;
   left: 6%;
-  background: linear-gradient(135deg, var(--lp-purple), var(--lp-ind3));
+  background: linear-gradient(135deg, #ffffff, #dfe3ff);
+  color: var(--lp-bright);
   animation-delay: 1s;
 }
 .lp-float.cube {
   top: 10%;
   right: -3%;
-  background: linear-gradient(135deg, var(--lp-gold), #d8a847);
-  color: #3a2c06;
+  background: linear-gradient(135deg, var(--lp-ind3), #9aa2ff);
+  color: #fff;
   animation-delay: 0.5s;
 }
 
@@ -497,13 +526,13 @@
   border-radius: var(--lp-radius);
   padding: 22px 16px;
   text-align: center;
-  box-shadow: 0 18px 40px -28px rgba(27, 31, 90, 0.4);
+  box-shadow: 0 20px 44px -30px rgba(17, 24, 95, 0.34);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .lp-feature:hover {
   transform: translateY(-4px);
-  box-shadow: 0 26px 50px -26px rgba(27, 31, 90, 0.5);
+  box-shadow: 0 28px 54px -28px rgba(17, 24, 95, 0.42);
 }
 
 .lp-feature-icon {
@@ -573,14 +602,14 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--lp-ind3), var(--lp-purple));
+  background: linear-gradient(135deg, #6b65ff, var(--lp-bright));
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 800;
   font-size: 14px;
-  box-shadow: 0 12px 26px -8px rgba(42, 48, 128, 0.6);
-  border: 2px solid rgba(231, 184, 92, 0.55);
+  box-shadow: 0 12px 26px -8px rgba(48, 47, 194, 0.62);
+  border: 2px solid rgba(226, 229, 251, 0.95);
   z-index: 2;
 }
 
@@ -632,7 +661,7 @@
   color: #b6b8d0;
 }
 .lp-check {
-  color: var(--lp-gold-d);
+  color: var(--lp-bright);
 }
 
 /* ── Testimonios ── */
@@ -651,7 +680,7 @@
 }
 
 .lp-stars {
-  color: var(--lp-gold);
+  color: var(--lp-ind3);
   display: flex;
   gap: 2px;
   margin-bottom: 12px;
@@ -741,16 +770,16 @@
 }
 
 .lp-plan.featured {
-  border: 2px solid var(--lp-gold);
-  box-shadow: 0 30px 60px -30px rgba(194, 145, 47, 0.4);
+  border: 2px solid var(--lp-ind3);
+  box-shadow: 0 30px 60px -30px rgba(48, 47, 194, 0.36);
 }
 
 .lp-plan-badge {
   position: absolute;
   top: 20px;
   right: 24px;
-  background: linear-gradient(135deg, var(--lp-gold), #d8a847);
-  color: #3a2c06;
+  background: linear-gradient(135deg, var(--lp-ind3), var(--lp-bright));
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
   padding: 5px 12px;
@@ -774,7 +803,7 @@
   font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 800;
   font-size: 40px;
-  color: var(--lp-gold-d);
+  color: var(--lp-bright);
   margin-bottom: 18px;
 }
 
@@ -817,7 +846,9 @@
 .lp-cta {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(120deg, var(--lp-night), #161a52 55%, var(--lp-ind3));
+  background:
+    radial-gradient(circle at 66% 50%, rgba(141, 150, 255, 0.32), transparent 26%),
+    linear-gradient(120deg, var(--lp-night), #11186f 58%, #252ec4);
   border-radius: 28px;
   padding: 48px 44px;
   color: #fff;
@@ -834,7 +865,7 @@
   top: -80px;
   width: 360px;
   height: 360px;
-  background: radial-gradient(circle, rgba(231, 184, 92, 0.28), transparent 60%);
+  background: radial-gradient(circle, rgba(141, 150, 255, 0.34), transparent 60%);
 }
 
 .lp-cta h2 {
@@ -865,7 +896,7 @@
 
 .lp-cta-right span {
   font-size: 12px;
-  color: rgba(231, 184, 92, 0.92);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 /* ── Footer ── */
@@ -925,8 +956,8 @@
 }
 
 .lp-socials a:hover {
-  background: var(--lp-gold);
-  color: #3a2c06;
+  background: var(--lp-ind3);
+  color: #fff;
 }
 
 .lp-news {
@@ -953,9 +984,9 @@
 }
 
 .lp-news button {
-  background: linear-gradient(135deg, var(--lp-gold), #d8a847);
+  background: linear-gradient(135deg, var(--lp-ind3), var(--lp-bright));
   border: none;
-  color: #3a2c06;
+  color: #fff;
   padding: 0 16px;
   cursor: pointer;
 }

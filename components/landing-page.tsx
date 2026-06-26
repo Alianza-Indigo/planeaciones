@@ -138,7 +138,7 @@ export function LandingPage() {
       <section className="lp-hero">
         <div className="lp-container lp-hero-grid">
           <div>
-            <span className="lp-badge">Creada por Neurodivergentes, pero hecha para todos 💜</span>
+            <span className="lp-badge">Creada por docentes, para docentes 💜</span>
             <h1 className="lp-h1">
               La plataforma educativa más avanzada para crear planeaciones <span className="lp-grad">inclusivas</span>
             </h1>
@@ -483,7 +483,7 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="lp-footer-bottom">© 2024 Alianza Índigo Neurodivergente. Todos los derechos reservados.</div>
+          <div className="lp-footer-bottom">© 2026 Alianza Índigo. Todos los derechos reservados.</div>
         </div>
       </footer>
     </div>
