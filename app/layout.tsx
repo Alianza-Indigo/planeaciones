@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     title: "ADIA — Planeaciones Didácticas con IA",
     description:
       "Genera planeaciones NEM en minutos con adaptaciones para TDAH, TEA, dislexia y más.",
-    url: "https://adia.alianzaindigo.org",
+    url: "https://planeaciones.mx",
   },
 };
 
