@@ -2,6 +2,7 @@
 
 import {
   CreditCard,
+  ExternalLink,
   FileText,
   Gauge,
   GraduationCap,
@@ -49,7 +50,8 @@ export function AdminShell({ children, email }: { children: React.ReactNode; ema
           <h1>ADIA · Admin</h1>
           <p>{email ?? "Panel de operación"}</p>
         </div>
-        <Link className="badge" href="/planner">
+        <Link className="header-cta" href="/planner">
+          <ExternalLink size={15} />
           Ir a la app
         </Link>
       </header>

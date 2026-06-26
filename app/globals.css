@@ -136,6 +136,27 @@ p {
   text-transform: uppercase;
 }
 
+/* CTA visible en el header (ej. "Ir a la app" en el admin) */
+.header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--gold);
+  color: #3a2c06;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.header-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
 /* ── Layout ── */
 .app-body {
   display: flex;
