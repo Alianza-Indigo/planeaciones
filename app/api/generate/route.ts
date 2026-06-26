@@ -35,9 +35,16 @@ export async function POST(request: Request) {
     where: { userId: session.user.id },
   });
 
+  // Una membresía solo cuenta como activa si su periodo no ha vencido. Sin esta
+  // comprobación, una membresía ACTIVE caducada daría generación ilimitada para
+  // siempre (nada cambia el status a EXPIRED automáticamente).
+  const membershipActive =
+    membership?.status === "ACTIVE" &&
+    (!membership.currentPeriodEndsAt || membership.currentPeriodEndsAt > new Date());
+
   const canGenerate =
     !membership ||
-    membership.status === "ACTIVE" ||
+    membershipActive ||
     membership.generationsUsed < FREE_GENERATION_LIMIT;
 
   if (!canGenerate) {

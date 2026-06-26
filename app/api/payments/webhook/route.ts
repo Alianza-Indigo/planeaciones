@@ -13,6 +13,14 @@ function addOneYear(from: Date): Date {
 }
 
 export async function POST(request: Request) {
+  // En producción el secret del webhook es obligatorio: sin él la firma no se
+  // valida (verifyMercadoPagoSignature devolvería true) y cualquiera podría
+  // disparar el endpoint. Mejor fallar como misconfiguración del servidor.
+  const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  if (!webhookSecret && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Webhook no configurado." }, { status: 500 });
+  }
+
   const { searchParams } = new URL(request.url);
   const payload = (await request.json().catch(() => ({}))) as {
     type?: string;
@@ -25,7 +33,7 @@ export async function POST(request: Request) {
     payload.data?.id ?? searchParams.get("data.id") ?? searchParams.get("id") ?? null;
 
   const signatureValid = verifyMercadoPagoSignature({
-    secret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+    secret: webhookSecret,
     xSignature: request.headers.get("x-signature"),
     xRequestId: request.headers.get("x-request-id"),
     dataId,
