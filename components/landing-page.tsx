@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   BookOpen,
-  Brain,
   Check,
   ClipboardList,
   Facebook,
@@ -15,6 +14,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import "@/app/landing.css";
@@ -109,7 +109,7 @@ export function LandingPage() {
         <div className="lp-container lp-nav">
           <div className="lp-brand">
             <span className="lp-logo">
-              <Brain size={22} />
+              <Image src="/images/logo-alianza-indigo.png" alt="" width={34} height={34} priority />
             </span>
             <span>
               <span className="lp-brand-name">ADIA</span>
@@ -185,56 +185,17 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Ilustración laptop */}
           <div className="lp-hero-art">
             <div className="lp-glow-ring" />
-            <div className="lp-float brain">
-              <Brain size={26} />
-            </div>
-            <div className="lp-float book">
-              <BookOpen size={24} />
-            </div>
-            <div className="lp-float cube">
-              <Users size={24} />
-            </div>
-            <div className="lp-laptop">
-              <div className="lp-laptop-bar">
-                <i />
-                <i />
-                <i />
-              </div>
-              <div className="lp-mock">
-                <div className="lp-mock-side">
-                  <b>ADIA</b>
-                  <span className="on" />
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="lp-mock-main">
-                  <div className="lp-mock-steps">
-                    <em className="on" />
-                    <i />
-                    <em className="on" />
-                    <i />
-                    <em />
-                    <i />
-                    <em />
-                  </div>
-                  <div className="lp-mock-cards">
-                    <div />
-                    <div />
-                    <div />
-                  </div>
-                  <div className="lp-mock-rows">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Image
+              className="lp-laptop-image"
+              src="/images/lap-land.png"
+              alt="Vista de ADIA en una laptop con interfaz de generación de planeaciones"
+              width={1448}
+              height={1086}
+              priority
+              sizes="(max-width: 980px) 100vw, 58vw"
+            />
           </div>
         </div>
       </section>
@@ -414,7 +375,7 @@ export function LandingPage() {
             <div className="lp-footer-about">
               <div className="lp-brand">
                 <span className="lp-logo">
-                  <Brain size={22} />
+                  <Image src="/images/logo-alianza-indigo.png" alt="" width={34} height={34} />
                 </span>
                 <span>
                   <span className="lp-brand-name" style={{ color: "#fff" }}>

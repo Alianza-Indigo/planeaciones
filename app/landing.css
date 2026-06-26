@@ -116,23 +116,24 @@
 }
 
 .lp-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--lp-bright), var(--lp-ind3));
+  width: 42px;
+  height: 42px;
+  border-radius: 0;
+  background: transparent;
   display: grid;
   place-items: center;
-  color: #fff;
   flex-shrink: 0;
   position: relative;
 }
 
 .lp-logo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 11px;
-  border: 1.5px solid rgba(164, 171, 255, 0.7);
+  content: none;
+}
+
+.lp-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .lp-brand-name {
@@ -290,17 +291,18 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 430px;
+  min-height: 470px;
+  overflow: visible;
 }
 
 .lp-hero-art::before {
   content: "";
   position: absolute;
-  width: min(92%, 660px);
+  width: min(88%, 680px);
   aspect-ratio: 1 / 0.68;
-  border: 28px solid rgba(141, 150, 255, 0.18);
+  border: 24px solid rgba(141, 150, 255, 0.13);
   border-left-color: rgba(81, 76, 255, 0.08);
-  border-bottom-color: rgba(81, 76, 255, 0.22);
+  border-bottom-color: rgba(81, 76, 255, 0.16);
   border-radius: 50%;
   transform: rotate(-12deg);
   filter: blur(1px);
@@ -310,12 +312,12 @@
 .lp-hero-art::after {
   content: "";
   position: absolute;
-  bottom: 12%;
-  width: min(86%, 620px);
-  height: 76px;
-  background: linear-gradient(90deg, transparent, rgba(98, 92, 255, 0.42), rgba(141, 150, 255, 0.36), transparent);
+  bottom: 8%;
+  width: min(90%, 680px);
+  height: 82px;
+  background: linear-gradient(90deg, transparent, rgba(98, 92, 255, 0.28), rgba(141, 150, 255, 0.2), transparent);
   border-radius: 999px;
-  filter: blur(12px);
+  filter: blur(16px);
   z-index: 1;
 }
 
@@ -324,9 +326,19 @@
   bottom: 10%;
   width: 90%;
   height: 60%;
-  background: radial-gradient(ellipse at center, rgba(98, 92, 255, 0.38), transparent 65%);
-  filter: blur(12px);
+  background: radial-gradient(ellipse at center, rgba(98, 92, 255, 0.18), transparent 65%);
+  filter: blur(18px);
   z-index: 0;
+}
+
+.lp-laptop-image {
+  position: relative;
+  z-index: 2;
+  width: min(122%, 760px);
+  height: auto;
+  max-width: none;
+  transform: translateX(12px);
+  filter: drop-shadow(0 34px 44px rgba(17, 24, 95, 0.22));
 }
 
 .lp-laptop {
@@ -1004,7 +1016,8 @@
 @media (max-width: 980px) {
   .lp-menu { display: none; }
   .lp-hero-grid { grid-template-columns: 1fr; }
-  .lp-hero-art { order: -1; }
+  .lp-hero-art { order: -1; min-height: 390px; }
+  .lp-laptop-image { width: min(100%, 680px); transform: none; }
   .lp-features { grid-template-columns: repeat(3, 1fr); margin-top: 24px; }
   .lp-compare-grid { grid-template-columns: 1fr; gap: 28px; }
   .lp-tcards { grid-template-columns: 1fr; }
@@ -1020,4 +1033,5 @@
   .lp-actions .lp-btn-outline { display: none; }
   .lp-footer-grid { grid-template-columns: 1fr; }
   .lp-hero { padding-top: 40px; }
+  .lp-hero-art { min-height: 280px; }
 }
