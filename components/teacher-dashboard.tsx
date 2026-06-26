@@ -1381,7 +1381,11 @@ function PlaneacionView({
     );
   }
 
-  const parsed = parseSesiones(draft.content);
+  // Excluir el apéndice "MATERIALES POR SESION" para no duplicar las tarjetas
+  // de sesión (los materiales viven en su propia pestaña).
+  const idxMateriales = draft.content.indexOf("\nMATERIALES POR SESION\n");
+  const planContent = idxMateriales >= 0 ? draft.content.slice(0, idxMateriales) : draft.content;
+  const parsed = parseSesiones(planContent);
 
   return (
     <div className="page-inner wide">
@@ -1413,7 +1417,7 @@ function PlaneacionView({
         ))
       ) : (
         <div className="card">
-          <div className="md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(draft.content) }} />
+          <div className="md-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(planContent) }} />
         </div>
       )}
     </div>
