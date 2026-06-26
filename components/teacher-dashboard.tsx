@@ -2,16 +2,25 @@
 
 import {
   AlertTriangle,
+  Award,
+  BookOpen,
+  Calendar,
   ChevronDown,
+  CheckCircle2,
+  Clock,
   Copy,
   Download,
+  ExternalLink,
   FileText,
-  Layers,
+  HeartHandshake,
+  HelpCircle,
+  History,
   LayoutDashboard,
   Loader2,
   LogIn,
   LogOut,
   Menu,
+  MessageSquare,
   Package,
   Printer,
   Save,
@@ -19,7 +28,10 @@ import {
   Upload,
   UploadCloud,
   Users,
+  Eye,
+  type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -579,12 +591,22 @@ export function TeacherDashboard() {
     );
   }
 
-  const navItems: { id: Tab; label: string; icon: typeof Sparkles }[] = [
-    { id: "generacion", label: "Generación", icon: Layers },
-    { id: "planeacion", label: "Planeación", icon: FileText },
+  const navItems: { id: Tab | "historial"; label: string; icon: LucideIcon }[] = [
+    { id: "generacion", label: "Generación", icon: Sparkles },
+    { id: "planeacion", label: "Planeación", icon: Calendar },
     { id: "materiales", label: "Materiales", icon: Package },
-    { id: "preview", label: "Preview", icon: FileText },
+    { id: "preview", label: "Vista previa", icon: Eye },
+    { id: "historial", label: "Historial", icon: History },
   ];
+  const userName = session?.user?.name || nombreDocente || "Docente ADIA";
+  const userRole = esAdmin ? "Administrador" : "Docente";
+  const userInitials =
+    userName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "AD";
 
   function go(next: Tab) {
     setTab(next);
@@ -795,82 +817,146 @@ export function TeacherDashboard() {
         <button className="hamburger" onClick={() => setSidebarOpen((value) => !value)} aria-label="Menú">
           <Menu size={20} />
         </button>
-        <div className="logo-mark">AI</div>
+        <Image src="/images/logo-alianza-indigo.png" alt="" width={34} height={34} className="header-logo" />
         <div className="header-text">
           <h1>ADIA</h1>
-          <p>Alianza Índigo Neurodivergente A.C.</p>
+          <p>Alianza Índigo Neurodivergente</p>
         </div>
-        <span className="badge">NEM 2025</span>
+        <span className="badge">Docente</span>
       </header>
 
       <div className="sidebar-overlay" data-open={sidebarOpen} onClick={() => setSidebarOpen(false)} />
 
       <div className="app-body">
         <aside className="sidebar" data-open={sidebarOpen}>
-          <div className="nav-label">Navegación</div>
+          <div className="sidebar-brand">
+            <Image src="/images/logo-alianza-indigo.png" alt="" width={72} height={72} className="sidebar-logo" />
+            <div>
+              <div className="sidebar-brand-name">ADIA</div>
+              <div className="sidebar-brand-subtitle">Alianza Índigo Neurodivergente</div>
+            </div>
+          </div>
           {navItems.map((item) => {
             const Icon = item.icon;
+            const disabled = item.id === "historial";
             return (
               <button
                 key={item.id}
                 type="button"
                 className="nav-item"
-                data-active={tab === item.id}
-                onClick={() => go(item.id)}
+                data-active={!disabled && tab === item.id}
+                data-disabled={disabled}
+                disabled={disabled}
+                onClick={() => {
+                  if (item.id !== "historial") go(item.id);
+                }}
               >
-                <Icon size={16} />
+                <Icon size={20} />
                 {item.label}
               </button>
             );
           })}
           <div className="nav-spacer" />
+          <div className="teacher-user-card">
+            <div className="teacher-user-avatar">{userInitials}</div>
+            <div>
+              <strong>{userName}</strong>
+              <span>{userRole}</span>
+            </div>
+          </div>
+          <a className="nav-item help" href="mailto:contacto@alianzaindigo.org">
+            <HelpCircle size={20} />
+            Centro de ayuda
+            <ExternalLink size={14} className="nav-trailing-icon" />
+          </a>
           {esAdmin ? (
             <a className="nav-item" href="/admin">
-              <LayoutDashboard size={16} />
+              <LayoutDashboard size={20} />
               Panel admin
             </a>
           ) : null}
           {autenticado ? (
             <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
-              <LogOut size={16} />
+              <LogOut size={20} />
               Salir
             </button>
           ) : (
             <button className="nav-item" type="button" onClick={() => signIn("google", { callbackUrl: "/" })}>
-              <LogIn size={16} />
+              <LogIn size={20} />
               Iniciar sesión
             </button>
           )}
         </aside>
 
         <main className="main">
+          <div className="teacher-topbar">
+            <div>
+              <h1>Nueva planeación didáctica</h1>
+              <p>Planeaciones autoejecutables con inclusión neurodivergente</p>
+            </div>
+            <div className="teacher-topbar-actions">
+              <button className="button secondary" type="button" onClick={savePreview} disabled={!draft}>
+                <Save size={17} />
+                Guardar borrador
+              </button>
+              <button className="button primary" type="button" onClick={generar} disabled={loading}>
+                {loading ? <Loader2 size={17} className="spin" /> : <Sparkles size={17} />}
+                {loading ? "Generando..." : "Generar planeación"}
+              </button>
+            </div>
+          </div>
+
           {tab === "generacion" ? (
-            <div className="page-inner">
-              <div className="intro">
-                <h2>
-                  Asistente Docente de
-                  <br />
-                  <span>Inteligencia Artificial</span>
-                </h2>
-                <p>
-                  Diseña planeaciones inclusivas alineadas a la Nueva Escuela Mexicana, adaptadas para estudiantes
-                  neurodivergentes.
-                </p>
-                <div className="intro-meta">
-                  <div className="meta-item">
-                    <div className="meta-dot" />
-                    Basado en NEM
+            <div className="page-inner dashboard-page">
+              <div className="teacher-planner-layout">
+                <section className="teacher-planner-main">
+                  <div className="intro">
+                    <div className="intro-icon">
+                      <BookOpen size={48} />
+                    </div>
+                    <div className="intro-copy">
+                      <h2>Genera una clase completa, no solo una planeación</h2>
+                      <p>ADIA organiza todos los datos obligatorios de la planeación NEM en un flujo guiado.</p>
+                      <div className="intro-meta">
+                        <div className="meta-item">
+                          <MessageSquare size={18} />
+                          <span>
+                            <strong>Guion docente</strong>
+                            Secuencias claras y listas para aplicar
+                          </span>
+                        </div>
+                        <div className="meta-item">
+                          <FileText size={18} />
+                          <span>
+                            <strong>Materiales y evaluación</strong>
+                            Recursos, actividades y evaluación alineados
+                          </span>
+                        </div>
+                        <div className="meta-item">
+                          <Users size={18} />
+                          <span>
+                            <strong>Inclusión neurodivergente</strong>
+                            Apoyos específicos para todos tus estudiantes
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="meta-item">
-                    <div className="meta-dot" />
-                    Enfoque inclusivo
+
+                  <div className="dashboard-stepper" aria-label="Progreso de planeación">
+                    {[
+                      ["1", "Datos generales", true],
+                      ["2", "Contenido NEM", true],
+                      ["3", "Diseño didáctico", true],
+                      ["4", "Evaluación", false],
+                      ["5", "Inclusión", false],
+                    ].map(([number, label, active]) => (
+                      <div className="dashboard-step" data-active={active} key={String(number)}>
+                        <span>{active && number !== "3" ? <CheckCircle2 size={18} /> : number}</span>
+                        <p>{label}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="meta-item">
-                    <div className="meta-dot" />
-                    IA Generativa
-                  </div>
-                </div>
-              </div>
 
               {/* Datos del docente */}
               <div className="section-label">Datos del docente</div>
@@ -1300,6 +1386,19 @@ export function TeacherDashboard() {
                   Los recuadros de salida son editables. Puedes copiar cada sección o descargar la planeación.
                 </p>
               </div>
+                </section>
+                <PlanningSidePanel
+                  nombreDocente={nombreDocente || userName}
+                  nombreEscuela={nombreEscuela}
+                  periodoPlaneado={periodoPlaneado}
+                  nivel={nivel}
+                  grado={grado}
+                  fase={buildFase(nivel, grado)}
+                  sesiones={sesiones}
+                  duracion={duracion}
+                  onPreview={() => go("preview")}
+                />
+              </div>
             </div>
           ) : null}
 
@@ -1347,6 +1446,92 @@ export function TeacherDashboard() {
         · Uso educativo
       </footer>
     </div>
+  );
+}
+
+function PlanningSidePanel({
+  nombreDocente,
+  nombreEscuela,
+  periodoPlaneado,
+  nivel,
+  grado,
+  fase,
+  sesiones,
+  duracion,
+  onPreview,
+}: {
+  nombreDocente: string;
+  nombreEscuela: string;
+  periodoPlaneado: string;
+  nivel: NivelEdu;
+  grado: string;
+  fase: string;
+  sesiones: number;
+  duracion: number;
+  onPreview: () => void;
+}) {
+  const includedItems: { icon: LucideIcon; label: string }[] = [
+    { icon: Clock, label: "Sesiones completas con tiempos" },
+    { icon: MessageSquare, label: "Preguntas detonadoras y guion docente" },
+    { icon: FileText, label: "Materiales complementarios" },
+    { icon: Award, label: "Rúbrica o lista de cotejo" },
+    { icon: Users, label: "Adaptaciones neurodivergentes" },
+    { icon: HeartHandshake, label: "Guía para entender conductas y apoyar al alumno" },
+  ];
+
+  return (
+    <aside className="teacher-side-panel">
+      <section className="side-card">
+        <h2>Tu planeación incluirá</h2>
+        <div className="included-list">
+          {includedItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div className="included-item" key={item.label}>
+                <span>
+                  <Icon size={21} />
+                </span>
+                <p>{item.label}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="side-card">
+        <h2>Mini vista previa</h2>
+        <div className="mini-preview">
+          <div className="mini-preview-head">
+            <div>
+              <Image src="/images/logo-alianza-indigo.png" alt="" width={26} height={26} />
+              <strong>ADIA</strong>
+            </div>
+            <span>{periodoPlaneado || "Bloque 1"}</span>
+          </div>
+          <h3>PLANEACIÓN DIDÁCTICA - {nivel} {grado.replace(/\D/g, "") || "3"}</h3>
+          <div className="mini-table">
+            <span>Docente</span>
+            <strong>{nombreDocente || "Docente"}</strong>
+            <span>Escuela</span>
+            <strong>{nombreEscuela || "Escuela"}</strong>
+            <span>Sesiones</span>
+            <strong>{sesiones} de {duracion} min</strong>
+            <span>Fase</span>
+            <strong>{fase}</strong>
+          </div>
+          <div className="mini-lines">
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
+        <button className="button secondary side-preview-button" type="button" onClick={onPreview}>
+          <Eye size={17} />
+          Ver vista previa completa
+          <ExternalLink size={14} />
+        </button>
+      </section>
+    </aside>
   );
 }
 
