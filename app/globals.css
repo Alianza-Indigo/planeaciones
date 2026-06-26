@@ -15,7 +15,7 @@
   --sidebar-w:  272px;
   --radius:     8px;
   --radius-lg:  10px;
-  --font-head:  var(--font-syne), 'Syne', sans-serif;
+  --font-head:  var(--font-inter), 'Inter', sans-serif;
   --font-body:  var(--font-inter), 'Inter', sans-serif;
 }
 

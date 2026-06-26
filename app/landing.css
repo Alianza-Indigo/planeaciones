@@ -1030,7 +1030,9 @@
 @media (max-width: 560px) {
   .lp-features { grid-template-columns: 1fr 1fr; }
   .lp-brand-sub { display: none; }
-  .lp-actions .lp-btn-outline { display: none; }
+  /* Mantener visible el acceso ("Iniciar sesión") en móvil, pero compacto. */
+  .lp-actions { gap: 8px; }
+  .lp-actions .lp-btn { padding: 9px 12px; font-size: 13px; }
   .lp-footer-grid { grid-template-columns: 1fr; }
   .lp-hero { padding-top: 40px; }
   .lp-hero-art { min-height: 280px; }
