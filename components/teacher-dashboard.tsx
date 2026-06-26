@@ -876,7 +876,7 @@ export function TeacherDashboard() {
             </a>
           ) : null}
           {autenticado ? (
-            <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
+            <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/" })}>
               <LogOut size={20} />
               Salir
             </button>

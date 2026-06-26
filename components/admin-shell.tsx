@@ -95,7 +95,7 @@ export function AdminShell({ children, email }: { children: React.ReactNode; ema
             Ir a la app
           </Link>
 
-          <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
+          <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/" })}>
             <LogOut size={16} />
             Salir
           </button>

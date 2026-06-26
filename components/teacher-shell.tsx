@@ -60,7 +60,7 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
 
           <div className="nav-spacer" />
 
-          <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/login" })}>
+          <button className="nav-item danger" type="button" onClick={() => signOut({ callbackUrl: "/" })}>
             <LogOut size={16} />
             Salir
           </button>
