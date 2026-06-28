@@ -42,7 +42,11 @@ export async function POST(request: Request) {
     membership?.status === "ACTIVE" &&
     (!membership.currentPeriodEndsAt || membership.currentPeriodEndsAt > new Date());
 
+  // Los administradores generan sin tope (pruebas internas).
+  const isAdmin = session.user.role === "ADMIN";
+
   const canGenerate =
+    isAdmin ||
     !membership ||
     membershipActive ||
     membership.generationsUsed < FREE_GENERATION_LIMIT;
