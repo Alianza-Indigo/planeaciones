@@ -1,6 +1,11 @@
 import { callGemini } from "@/lib/alianza-indigo/client";
 import { buildMaterialesPrompt } from "@/lib/generation/build-planning-prompt";
-import { limpiarDocumento, materialesAtexto, splitMateriales } from "@/lib/generation/materiales";
+import {
+  limpiarDocumento,
+  materialesAtexto,
+  quitarMaterialesJsonFiltrado,
+  splitMateriales,
+} from "@/lib/generation/materiales";
 import type { GeneratedPlanning, PlanningInput } from "@/lib/generation/types";
 
 export async function generatePlanningWithAlianzaIndigo(
@@ -9,7 +14,7 @@ export async function generatePlanningWithAlianzaIndigo(
 ): Promise<GeneratedPlanning> {
   // 1) Plan principal. Temperatura baja: prioriza estructura y blindajes.
   const result = await callGemini(prompt, { temperature: 0.3 });
-  const plan = limpiarDocumento(splitMateriales(result.text).texto);
+  const plan = quitarMaterialesJsonFiltrado(limpiarDocumento(splitMateriales(result.text).texto));
 
   // 2) Materiales en una llamada dedicada (evita truncamiento al final del plan).
   //    Temperatura más alta: aquí se escribe el cuento original y los materiales,
