@@ -33,11 +33,14 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && account.providerAccountId && user.email) {
+        const esAdminPorCorreo = getAdminEmails().includes(user.email.toLowerCase());
         await prisma.user.updateMany({
           where: { email: user.email },
           data: {
             googleSubject: account.providerAccountId,
-            role: getAdminEmails().includes(user.email.toLowerCase()) ? "ADMIN" : "USER",
+            // Solo se ELEVA a ADMIN por ADMIN_EMAILS. Nunca se degrada el rol
+            // aquí: así un admin asignado desde la consola sobrevive al login.
+            ...(esAdminPorCorreo ? { role: "ADMIN" } : {}),
           },
         });
       }
