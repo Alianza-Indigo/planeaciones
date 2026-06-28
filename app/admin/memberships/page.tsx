@@ -35,7 +35,9 @@ export default async function AdminMembershipsPage() {
                 <td>{membership.plan}</td>
                 <td>{membership.status}</td>
                 <td>
-                  {membership.generationsUsed}/{membership.generationLimit}
+                  {membership.user.role === "ADMIN"
+                    ? `${membership.generationsUsed}/∞`
+                    : `${membership.generationsUsed}/${membership.generationLimit}`}
                 </td>
               </tr>
             ))}
