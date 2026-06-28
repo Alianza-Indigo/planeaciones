@@ -411,6 +411,7 @@ export function LandingPage() {
             <div>
               <h5>Recursos</h5>
               <ul>
+                <li><a href="/instalar">Instalar la app</a></li>
                 <li><a href="#top">Blog</a></li>
                 <li><a href="#top">Guías</a></li>
                 <li><a href="#top">Centro de ayuda</a></li>

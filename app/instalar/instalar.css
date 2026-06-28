@@ -1,0 +1,169 @@
+.install {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 75% -5%, rgba(139, 122, 240, 0.18), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8f9ff 60%, #ffffff 100%);
+  padding: 48px 20px 72px;
+  color: var(--text, #090b3f);
+}
+
+.install-inner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.install-head {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.install-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 14px;
+}
+
+.install-head h1 {
+  font-family: var(--font-head, "Inter", sans-serif);
+  font-weight: 800;
+  font-size: clamp(26px, 5vw, 38px);
+  letter-spacing: -0.5px;
+  color: var(--indigo-mid, #24119a);
+  line-height: 1.1;
+}
+
+.install-head p {
+  margin-top: 12px;
+  font-size: 16px;
+  color: var(--muted, #5a5f86);
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.install-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.install-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(9, 11, 63, 0.08);
+  border-radius: 18px;
+  padding: 26px 24px;
+  box-shadow: 0 14px 38px rgba(9, 11, 63, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+.install-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.install-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #24119a 0%, #563bd5 100%);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.install-card-head h2 {
+  font-family: var(--font-head, "Inter", sans-serif);
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--indigo-mid, #24119a);
+}
+
+.install-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.install-step {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+
+.install-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--gold, #e7b85c);
+  color: #3a2c06;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.install-step-text {
+  font-size: 15px;
+  line-height: 1.5;
+  padding-top: 2px;
+}
+
+.install-step-text .ic {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin: 0 2px;
+  color: var(--accent, #5842d6);
+}
+
+.install-note {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(88, 66, 214, 0.07);
+  border: 1px solid rgba(88, 66, 214, 0.14);
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.install-note svg {
+  color: var(--accent, #5842d6);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.install-cta {
+  text-align: center;
+  margin-top: 34px;
+}
+
+.install-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #24119a 0%, #563bd5 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(46, 27, 170, 0.22);
+}
+
+@media (max-width: 720px) {
+  .install-grid {
+    grid-template-columns: 1fr;
+  }
+}
