@@ -122,11 +122,8 @@ export function LandingPage() {
             ))}
           </nav>
           <div className="lp-actions">
-            <Link className="lp-btn lp-btn-outline" href="/login">
-              Iniciar sesión
-            </Link>
-            <Link className="lp-btn lp-btn-primary" href="/planner">
-              Comenzar ahora <ArrowRight size={17} />
+            <Link className="lp-btn lp-btn-primary" href="/login">
+              Ingresar <ArrowRight size={17} />
             </Link>
           </div>
         </div>
