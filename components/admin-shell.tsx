@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bell,
   CreditCard,
   ExternalLink,
   FileText,
@@ -32,6 +33,7 @@ const navLinks: NavLink[] = [
   { href: "/admin/payments", label: "Pagos", icon: CreditCard },
   { href: "/admin/generations", label: "Generaciones", icon: FileText },
   { href: "/admin/prompts", label: "Prompts", icon: GraduationCap },
+  { href: "/admin/notifications", label: "Notificaciones", icon: Bell },
   { href: "/admin/settings", label: "Ajustes", icon: Settings },
 ];
 

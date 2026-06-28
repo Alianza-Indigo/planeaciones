@@ -16,6 +16,10 @@ const serverEnvSchema = z.object({
   ADMIN_EMAILS: z.string().default(""),
   DRAFT_TTL_HOURS: z.coerce.number().int().positive().default(24),
   CRON_SECRET: z.string().optional(),
+  // Web Push (PWA). Opcionales: sin ellas, las notificaciones se desactivan.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default("mailto:contacto@alianzaindigo.org"),
 });
 
 const geminiEnvSchema = serverEnvSchema.pick({
