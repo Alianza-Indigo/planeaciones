@@ -4,7 +4,12 @@ import type { GeminiResponse, GeminiResult } from "@/lib/alianza-indigo/types";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 // Llama al endpoint generateContent de Google Gemini con el prompt maestro.
-export async function callGemini(prompt: string): Promise<GeminiResult> {
+// `temperature` se ajusta por llamada: más baja para el plan (estructura) y
+// más alta para los materiales (donde se escribe el cuento original).
+export async function callGemini(
+  prompt: string,
+  options?: { temperature?: number },
+): Promise<GeminiResult> {
   const env = getGeminiEnv();
   const model = env.GEMINI_MODEL;
 
@@ -18,7 +23,7 @@ export async function callGemini(prompt: string): Promise<GeminiResult> {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 65536,
-        temperature: 0.2,
+        temperature: options?.temperature ?? 0.2,
       },
     }),
   });
