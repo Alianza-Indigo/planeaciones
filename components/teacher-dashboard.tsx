@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  CreditCard,
   Download,
   ExternalLink,
   FileText,
@@ -864,6 +865,12 @@ export function TeacherDashboard() {
               <span>{userRole}</span>
             </div>
           </div>
+          {autenticado ? (
+            <a className="nav-item" href="/cuenta">
+              <CreditCard size={20} />
+              Mi membresía
+            </a>
+          ) : null}
           <a className="nav-item help" href="mailto:contacto@alianzaindigo.org">
             <HelpCircle size={20} />
             Centro de ayuda
