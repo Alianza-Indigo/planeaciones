@@ -99,7 +99,7 @@ const PLAN_ESCUELA = [
   "Soporte prioritario",
 ];
 
-export function LandingPage() {
+export function LandingPage({ precioMxn = "$99" }: { precioMxn?: string }) {
   return (
     <div className="lp" id="top">
       {/* Header */}
@@ -305,7 +305,7 @@ export function LandingPage() {
               <h3>Plan Docente</h3>
               <p className="lp-plan-desc">Todo lo que necesitas para planear mejor cada día.</p>
               <div className="lp-price">
-                $99 <small>MXN / año</small>
+                {precioMxn} <small>MXN / año</small>
               </div>
               <div className="lp-plan-list">
                 {PLAN_DOCENTE.map((item) => (

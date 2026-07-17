@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { LandingPage } from "@/components/landing-page";
 import { getSession } from "@/lib/auth";
+import { getMembershipPriceCents } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -20,5 +21,13 @@ export default async function HomePage() {
     redirect(session.user.role === "ADMIN" ? "/admin" : "/planner");
   }
 
-  return <LandingPage />;
+  const priceCents = await getMembershipPriceCents();
+  const precioMxn = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(priceCents / 100);
+
+  return <LandingPage precioMxn={precioMxn} />;
 }
