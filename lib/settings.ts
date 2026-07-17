@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 
 const MEMBERSHIP_PRICE_KEY = "membership_annual_price_cents";
 
-// Precio por defecto de la membresía anual: $99 MXN.
+// Precio mensual por defecto de la membresía: $99 MXN/mes.
 export const DEFAULT_MEMBERSHIP_PRICE_CENTS = 9900;
 
 // Límites de cordura para el precio (en centavos): $1 a $100,000 MXN.

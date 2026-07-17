@@ -305,7 +305,7 @@ export function LandingPage({ precioMxn = "$99" }: { precioMxn?: string }) {
               <h3>Plan Docente</h3>
               <p className="lp-plan-desc">Todo lo que necesitas para planear mejor cada día.</p>
               <div className="lp-price">
-                {precioMxn} <small>MXN / año</small>
+                {precioMxn} <small>MXN / mes</small>
               </div>
               <div className="lp-plan-list">
                 {PLAN_DOCENTE.map((item) => (

@@ -35,12 +35,14 @@ export async function POST(request: Request) {
     where: { userId: session.user.id },
   });
 
-  // Una membresía solo cuenta como activa si su periodo no ha vencido. Sin esta
-  // comprobación, una membresía ACTIVE caducada daría generación ilimitada para
-  // siempre (nada cambia el status a EXPIRED automáticamente).
+  // Una membresía da acceso si su periodo no ha vencido. CANCELED también
+  // cuenta: al cancelar la suscripción se conserva el acceso hasta el fin del
+  // periodo ya pagado. La comprobación de vigencia evita que una membresía
+  // caducada dé acceso ilimitado para siempre (nada la marca EXPIRED sola).
+  const vigente =
+    !membership?.currentPeriodEndsAt || membership.currentPeriodEndsAt > new Date();
   const membershipActive =
-    membership?.status === "ACTIVE" &&
-    (!membership.currentPeriodEndsAt || membership.currentPeriodEndsAt > new Date());
+    (membership?.status === "ACTIVE" || membership?.status === "CANCELED") && vigente;
 
   // Los administradores generan sin tope (pruebas internas).
   const isAdmin = session.user.role === "ADMIN";

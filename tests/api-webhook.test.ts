@@ -3,13 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     payment: { findUnique: vi.fn(), update: vi.fn() },
-    membership: { upsert: vi.fn() },
+    membership: { upsert: vi.fn(), updateMany: vi.fn() },
   },
 }));
-const { getPaymentMock } = vi.hoisted(() => ({ getPaymentMock: vi.fn() }));
+const { getPaymentMock, getPreapprovalMock, getAuthorizedPaymentMock } = vi.hoisted(() => ({
+  getPaymentMock: vi.fn(),
+  getPreapprovalMock: vi.fn(),
+  getAuthorizedPaymentMock: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
-vi.mock("@/lib/payments/mercadopago", () => ({ getMercadoPagoPayment: getPaymentMock }));
+vi.mock("@/lib/payments/mercadopago", () => ({
+  getMercadoPagoPayment: getPaymentMock,
+  getMercadoPagoPreapproval: getPreapprovalMock,
+  getMercadoPagoAuthorizedPayment: getAuthorizedPaymentMock,
+}));
 
 import { POST } from "@/app/api/payments/webhook/route";
 
@@ -27,6 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.payment.update.mockResolvedValue({});
   prismaMock.membership.upsert.mockResolvedValue({});
+  prismaMock.membership.updateMany.mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -101,5 +110,49 @@ describe("POST /api/payments/webhook", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ignored: expect.stringContaining("not found") });
     expect(prismaMock.membership.upsert).not.toHaveBeenCalled();
+  });
+
+  it("activa la membresía MENSUAL cuando la suscripción queda autorizada", async () => {
+    getPreapprovalMock.mockResolvedValue({
+      id: "pre1",
+      status: "authorized",
+      external_reference: "u1",
+      next_payment_date: "2030-02-01T00:00:00Z",
+    });
+    const res = await call({ type: "subscription_preapproval", data: { id: "pre1" } });
+    expect(res.status).toBe(200);
+    const upsertArgs = prismaMock.membership.upsert.mock.calls[0][0];
+    expect(upsertArgs.where).toEqual({ userId: "u1" });
+    expect(upsertArgs.create).toMatchObject({
+      plan: "MONTHLY",
+      status: "ACTIVE",
+      generationLimit: 999999,
+      mpPreapprovalId: "pre1",
+    });
+  });
+
+  it("marca CANCELED al cancelarse la suscripción", async () => {
+    getPreapprovalMock.mockResolvedValue({ id: "pre1", status: "cancelled", external_reference: "u1" });
+    const res = await call({ type: "subscription_preapproval", data: { id: "pre1" } });
+    expect(res.status).toBe(200);
+    expect(prismaMock.membership.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "u1" }, data: { status: "CANCELED" } }),
+    );
+    expect(prismaMock.membership.upsert).not.toHaveBeenCalled();
+  });
+
+  it("extiende el periodo ante un cargo recurrente procesado", async () => {
+    getAuthorizedPaymentMock.mockResolvedValue({ id: 5, status: "processed", preapproval_id: "pre1" });
+    getPreapprovalMock.mockResolvedValue({
+      id: "pre1",
+      status: "authorized",
+      external_reference: "u1",
+      next_payment_date: "2030-03-01T00:00:00Z",
+    });
+    const res = await call({ type: "subscription_authorized_payment", data: { id: "5" } });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ charged: true });
+    const upsertArgs = prismaMock.membership.upsert.mock.calls[0][0];
+    expect(upsertArgs.update).toMatchObject({ plan: "MONTHLY", status: "ACTIVE" });
   });
 });

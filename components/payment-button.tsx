@@ -5,22 +5,33 @@ import { useState } from "react";
 
 export function PaymentButton() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function checkout() {
     setLoading(true);
-    const response = await fetch("/api/payments/create", { method: "POST" });
-    const payload = await response.json();
-    setLoading(false);
-
-    if (payload.checkoutUrl) {
-      window.location.href = payload.checkoutUrl;
+    setError(null);
+    try {
+      const response = await fetch("/api/subscriptions/create", { method: "POST" });
+      const payload = await response.json();
+      if (payload.checkoutUrl) {
+        window.location.href = payload.checkoutUrl;
+        return;
+      }
+      setError(payload.error ?? "No se pudo iniciar la suscripción.");
+    } catch {
+      setError("Error de red.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <button className="button primary" type="button" onClick={checkout} disabled={loading}>
-      {loading ? <Loader2 size={17} /> : <CreditCard size={17} />}
-      Ir a pago
-    </button>
+    <>
+      <button className="button primary" type="button" onClick={checkout} disabled={loading}>
+        {loading ? <Loader2 size={17} /> : <CreditCard size={17} />}
+        Suscribirme
+      </button>
+      {error ? <p className="alert" style={{ marginTop: 8 }}>{error}</p> : null}
+    </>
   );
 }

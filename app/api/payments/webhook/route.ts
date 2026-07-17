@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
-import { getMercadoPagoPayment } from "@/lib/payments/mercadopago";
+import {
+  getMercadoPagoAuthorizedPayment,
+  getMercadoPagoPayment,
+  getMercadoPagoPreapproval,
+} from "@/lib/payments/mercadopago";
 import { verifyMercadoPagoSignature } from "@/lib/payments/verify-signature";
 
 export const runtime = "nodejs";
@@ -9,6 +13,12 @@ export const runtime = "nodejs";
 function addOneYear(from: Date): Date {
   const date = new Date(from);
   date.setFullYear(date.getFullYear() + 1);
+  return date;
+}
+
+function addOneMonth(from: Date): Date {
+  const date = new Date(from);
+  date.setMonth(date.getMonth() + 1);
   return date;
 }
 
@@ -28,7 +38,7 @@ export async function POST(request: Request) {
     data?: { id?: string };
   };
 
-  // El id del pago llega en data.id (body) o como query param ?id=/?data.id=.
+  // El id del recurso llega en data.id (body) o como query param ?id=/?data.id=.
   const dataId =
     payload.data?.id ?? searchParams.get("data.id") ?? searchParams.get("id") ?? null;
 
@@ -42,8 +52,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
   }
 
-  // Solo nos interesan notificaciones de pago.
   const type = payload.type ?? searchParams.get("type");
+
+  // ── Suscripción: se autoriza / pausa / cancela ──
+  if (type === "subscription_preapproval") {
+    return handlePreapproval(dataId);
+  }
+
+  // ── Suscripción: cargo recurrente ejecutado ──
+  if (type === "subscription_authorized_payment") {
+    return handleAuthorizedPayment(dataId);
+  }
+
+  // Solo nos interesan además las notificaciones de pago único.
   if (type && type !== "payment") {
     return NextResponse.json({ ok: true, ignored: `type ${type}` });
   }
@@ -109,4 +130,77 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ ok: true });
+}
+
+// Activa/actualiza la membresía según el estado de la suscripción.
+async function handlePreapproval(dataId: string | null) {
+  if (!dataId) return NextResponse.json({ ok: true, ignored: "missing preapproval id" });
+
+  const pre = await getMercadoPagoPreapproval(dataId);
+  const userId = pre.external_reference ?? undefined;
+  if (!userId) return NextResponse.json({ ok: true, ignored: "missing external_reference" });
+
+  if (pre.status === "authorized") {
+    const periodEnd = pre.next_payment_date ? new Date(pre.next_payment_date) : addOneMonth(new Date());
+    const data = {
+      plan: "MONTHLY" as const,
+      status: "ACTIVE" as const,
+      generationLimit: 999999,
+      currentPeriodEndsAt: periodEnd,
+      mpPreapprovalId: dataId,
+    };
+    await prisma.membership.upsert({
+      where: { userId },
+      create: { userId, ...data },
+      update: data,
+    });
+    return NextResponse.json({ ok: true, status: "authorized" });
+  }
+
+  if (pre.status === "cancelled") {
+    await prisma.membership.updateMany({ where: { userId }, data: { status: "CANCELED" } });
+    return NextResponse.json({ ok: true, status: "cancelled" });
+  }
+
+  if (pre.status === "paused") {
+    await prisma.membership.updateMany({ where: { userId }, data: { status: "PAST_DUE" } });
+    return NextResponse.json({ ok: true, status: "paused" });
+  }
+
+  return NextResponse.json({ ok: true, status: pre.status });
+}
+
+// Extiende el periodo de la membresía cuando se ejecuta un cargo recurrente.
+async function handleAuthorizedPayment(dataId: string | null) {
+  if (!dataId) return NextResponse.json({ ok: true, ignored: "missing authorized payment id" });
+
+  const ap = await getMercadoPagoAuthorizedPayment(dataId);
+  if (ap.status !== "processed") {
+    return NextResponse.json({ ok: true, ignored: `authorized payment ${ap.status}` });
+  }
+
+  const preId = ap.preapproval_id;
+  if (!preId) return NextResponse.json({ ok: true, ignored: "missing preapproval_id" });
+
+  const pre = await getMercadoPagoPreapproval(preId);
+  const userId = pre.external_reference ?? undefined;
+  if (!userId) return NextResponse.json({ ok: true, ignored: "missing external_reference" });
+
+  // Periodo absoluto (fecha del próximo cargo): re-procesar el mismo evento es
+  // idempotente porque no acumula, fija la fecha.
+  const periodEnd = pre.next_payment_date ? new Date(pre.next_payment_date) : addOneMonth(new Date());
+  const data = {
+    plan: "MONTHLY" as const,
+    status: "ACTIVE" as const,
+    generationLimit: 999999,
+    currentPeriodEndsAt: periodEnd,
+    mpPreapprovalId: preId,
+  };
+  await prisma.membership.upsert({
+    where: { userId },
+    create: { userId, ...data },
+    update: data,
+  });
+
+  return NextResponse.json({ ok: true, charged: true });
 }

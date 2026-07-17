@@ -35,8 +35,8 @@ export function PriceEditor({ initialPesos }: { initialPesos: number }) {
     <div>
       <div className="config-row">
         <div className="config-key">
-          Precio de la membresía anual
-          <span>MXN, aplica a las próximas compras</span>
+          Precio de la membresía mensual
+          <span>MXN al mes, aplica a nuevas suscripciones</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontWeight: 700 }}>$</span>
