@@ -17,7 +17,11 @@ export function PaymentButton() {
         window.location.href = payload.checkoutUrl;
         return;
       }
-      setError(payload.error ?? "No se pudo iniciar la suscripción.");
+      setError(
+        [payload.error ?? "No se pudo iniciar la suscripción.", payload.details]
+          .filter(Boolean)
+          .join(" — "),
+      );
     } catch {
       setError("Error de red.");
     } finally {
