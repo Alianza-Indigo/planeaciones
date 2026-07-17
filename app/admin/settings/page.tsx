@@ -1,4 +1,6 @@
+import { PriceEditor } from "@/components/admin/price-editor";
 import { getAdminEmails } from "@/lib/env";
+import { getMembershipPriceCents } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -6,10 +8,11 @@ function isSet(value: string | undefined): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
   const adminEmails = getAdminEmails();
   const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
   const ttl = process.env.DRAFT_TTL_HOURS || "24";
+  const priceCents = await getMembershipPriceCents();
 
   // Estado de las variables de entorno (sin exponer sus valores).
   const envVars: { key: string; label: string; required: boolean }[] = [
@@ -32,6 +35,11 @@ export default function AdminSettingsPage() {
         <h1>Ajustes</h1>
         <p>Configuración operativa. Los valores sensibles se gestionan por variables de entorno en Vercel.</p>
       </div>
+
+      <div className="section-label">Membresía</div>
+      <section className="panel">
+        <PriceEditor initialPesos={priceCents / 100} />
+      </section>
 
       <div className="grid-2">
         <section className="panel">

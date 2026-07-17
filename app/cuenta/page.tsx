@@ -5,6 +5,7 @@ import { TeacherShell } from "@/components/teacher-shell";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FREE_GENERATION_LIMIT } from "@/lib/membership";
+import { getMembershipPriceCents } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,14 @@ export default async function AccountPage() {
   const membership = await prisma.membership.findUnique({
     where: { userId: session.user.id },
   });
+
+  const priceCents = await getMembershipPriceCents();
+  const precioMxn = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(priceCents / 100);
 
   const plan = membership?.plan ?? "FREE";
   const used = membership?.generationsUsed ?? 0;
@@ -82,7 +91,7 @@ export default async function AccountPage() {
               <p className="hint">Tu membresía está activa. ¡Gracias por apoyar el proyecto!</p>
             ) : (
               <>
-                <p className="hint">Acceso ilimitado a generación de planeaciones por 1 año — $99 MXN.</p>
+                <p className="hint">Acceso ilimitado a generación de planeaciones por 1 año — {precioMxn} MXN.</p>
                 <PaymentButton />
               </>
             )}
