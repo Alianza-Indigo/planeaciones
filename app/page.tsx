@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { LandingPage } from "@/components/landing-page";
 import { getSession } from "@/lib/auth";
-import { getMembershipPriceCents } from "@/lib/settings";
+import { frequencyLabels, getMembershipFrequency, getMembershipPriceCents } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,8 @@ export default async function HomePage() {
   }
 
   const priceCents = await getMembershipPriceCents();
+  const freq = await getMembershipFrequency();
+  const { periodo } = frequencyLabels(freq);
   const precioMxn = new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
@@ -29,5 +31,5 @@ export default async function HomePage() {
     maximumFractionDigits: 0,
   }).format(priceCents / 100);
 
-  return <LandingPage precioMxn={precioMxn} />;
+  return <LandingPage precioMxn={precioMxn} periodo={periodo} />;
 }

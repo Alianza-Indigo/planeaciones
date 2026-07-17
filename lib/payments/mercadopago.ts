@@ -84,6 +84,8 @@ export type SubscriptionInput = {
   payerEmail: string;
   userId: string;
   backUrl: string;
+  frequency: number;
+  frequencyType: string;
 };
 
 // Crea una suscripción (preapproval) sin plan asociado. Devuelve init_point,
@@ -101,8 +103,8 @@ export async function createMercadoPagoSubscription(input: SubscriptionInput) {
       external_reference: input.userId,
       payer_email: input.payerEmail,
       auto_recurring: {
-        frequency: 1,
-        frequency_type: "months",
+        frequency: input.frequency,
+        frequency_type: input.frequencyType,
         transaction_amount: input.amountCents / 100,
         currency_id: "MXN",
       },
@@ -124,6 +126,7 @@ export type MercadoPagoPreapproval = {
   external_reference?: string | null;
   payer_id?: number | string;
   next_payment_date?: string | null;
+  auto_recurring?: { frequency?: number; frequency_type?: string };
 };
 
 export async function getMercadoPagoPreapproval(id: string): Promise<MercadoPagoPreapproval> {

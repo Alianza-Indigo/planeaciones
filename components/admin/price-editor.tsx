@@ -3,8 +3,17 @@
 import { Save } from "lucide-react";
 import { useState } from "react";
 
-export function PriceEditor({ initialPesos }: { initialPesos: number }) {
+type Frequency = "monthly" | "annual";
+
+export function PriceEditor({
+  initialPesos,
+  initialFrequency,
+}: {
+  initialPesos: number;
+  initialFrequency: Frequency;
+}) {
   const [pesos, setPesos] = useState(String(initialPesos));
+  const [frequency, setFrequency] = useState<Frequency>(initialFrequency);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -20,10 +29,10 @@ export function PriceEditor({ initialPesos }: { initialPesos: number }) {
       const res = await fetch("/api/admin/settings/price", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ pesos: value }),
+        body: JSON.stringify({ pesos: value, frequency }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setMsg(res.ok ? "Precio actualizado. Aplica a las nuevas compras." : data.error ?? "No se pudo guardar.");
+      setMsg(res.ok ? "Guardado. Aplica a las nuevas suscripciones." : data.error ?? "No se pudo guardar.");
     } catch {
       setMsg("Error de red.");
     } finally {
@@ -31,12 +40,24 @@ export function PriceEditor({ initialPesos }: { initialPesos: number }) {
     }
   };
 
+  const sufijo = frequency === "annual" ? "al año" : "al mes";
+
   return (
     <div>
       <div className="config-row">
         <div className="config-key">
-          Precio de la membresía mensual
-          <span>MXN al mes, aplica a nuevas suscripciones</span>
+          Frecuencia de cobro
+          <span>Cada cuánto se cobra la suscripción</span>
+        </div>
+        <select value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)}>
+          <option value="monthly">Mensual</option>
+          <option value="annual">Anual</option>
+        </select>
+      </div>
+      <div className="config-row">
+        <div className="config-key">
+          Precio de la membresía
+          <span>MXN {sufijo}, aplica a nuevas suscripciones</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontWeight: 700 }}>$</span>
@@ -57,7 +78,7 @@ export function PriceEditor({ initialPesos }: { initialPesos: number }) {
         disabled={saving}
         style={{ marginTop: 12 }}
       >
-        <Save size={16} /> {saving ? "Guardando…" : "Guardar precio"}
+        <Save size={16} /> {saving ? "Guardando…" : "Guardar"}
       </button>
       {msg ? <p style={{ marginTop: 10, fontSize: 13, color: "var(--muted)" }}>{msg}</p> : null}
     </div>

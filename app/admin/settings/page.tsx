@@ -1,6 +1,6 @@
 import { PriceEditor } from "@/components/admin/price-editor";
 import { getAdminEmails } from "@/lib/env";
-import { getMembershipPriceCents } from "@/lib/settings";
+import { getMembershipFrequency, getMembershipPriceCents } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ export default async function AdminSettingsPage() {
   const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
   const ttl = process.env.DRAFT_TTL_HOURS || "24";
   const priceCents = await getMembershipPriceCents();
+  const frequency = await getMembershipFrequency();
 
   // Estado de las variables de entorno (sin exponer sus valores).
   const envVars: { key: string; label: string; required: boolean }[] = [
@@ -38,7 +39,7 @@ export default async function AdminSettingsPage() {
 
       <div className="section-label">Membresía</div>
       <section className="panel">
-        <PriceEditor initialPesos={priceCents / 100} />
+        <PriceEditor initialPesos={priceCents / 100} initialFrequency={frequency} />
       </section>
 
       <div className="grid-2">

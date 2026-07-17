@@ -22,6 +22,11 @@ function addOneMonth(from: Date): Date {
   return date;
 }
 
+// Deriva el plan de la periodicidad de la suscripción (12 meses = anual).
+function planFromPreapproval(auto?: { frequency?: number; frequency_type?: string }): "MONTHLY" | "ANNUAL" {
+  return (auto?.frequency ?? 1) >= 12 ? "ANNUAL" : "MONTHLY";
+}
+
 export async function POST(request: Request) {
   // En producción el secret del webhook es obligatorio: sin él la firma no se
   // valida (verifyMercadoPagoSignature devolvería true) y cualquiera podría
@@ -143,7 +148,7 @@ async function handlePreapproval(dataId: string | null) {
   if (pre.status === "authorized") {
     const periodEnd = pre.next_payment_date ? new Date(pre.next_payment_date) : addOneMonth(new Date());
     const data = {
-      plan: "MONTHLY" as const,
+      plan: planFromPreapproval(pre.auto_recurring),
       status: "ACTIVE" as const,
       generationLimit: 999999,
       currentPeriodEndsAt: periodEnd,
@@ -190,7 +195,7 @@ async function handleAuthorizedPayment(dataId: string | null) {
   // idempotente porque no acumula, fija la fecha.
   const periodEnd = pre.next_payment_date ? new Date(pre.next_payment_date) : addOneMonth(new Date());
   const data = {
-    plan: "MONTHLY" as const,
+    plan: planFromPreapproval(pre.auto_recurring),
     status: "ACTIVE" as const,
     generationLimit: 999999,
     currentPeriodEndsAt: periodEnd,

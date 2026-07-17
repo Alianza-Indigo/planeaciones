@@ -5,21 +5,25 @@ import { requireAdmin } from "@/lib/admin/require-admin";
 import {
   MAX_MEMBERSHIP_PRICE_CENTS,
   MIN_MEMBERSHIP_PRICE_CENTS,
+  setMembershipFrequency,
   setMembershipPriceCents,
 } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
-const schema = z.object({ pesos: z.number().positive() });
+const schema = z.object({
+  pesos: z.number().positive(),
+  frequency: z.enum(["monthly", "annual"]).optional(),
+});
 
-// Actualiza el precio de la membresía anual (en pesos). Solo ADMIN.
+// Actualiza el precio y la frecuencia de la membresía. Solo ADMIN.
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.response) return auth.response;
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Precio inválido." }, { status: 400 });
+    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
   }
 
   const cents = Math.round(parsed.data.pesos * 100);
@@ -28,5 +32,9 @@ export async function POST(request: Request) {
   }
 
   await setMembershipPriceCents(cents);
-  return NextResponse.json({ ok: true, cents });
+  if (parsed.data.frequency) {
+    await setMembershipFrequency(parsed.data.frequency);
+  }
+
+  return NextResponse.json({ ok: true, cents, frequency: parsed.data.frequency });
 }

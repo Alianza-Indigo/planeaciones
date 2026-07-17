@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getMercadoPagoEnv } from "@/lib/env";
 import { createMercadoPagoSubscription } from "@/lib/payments/mercadopago";
-import { getMembershipPriceCents } from "@/lib/settings";
+import {
+  frequencyToMercadoPago,
+  frequencyLabels,
+  getMembershipFrequency,
+  getMembershipPriceCents,
+} from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -16,6 +21,9 @@ export async function POST() {
 
   const env = getMercadoPagoEnv();
   const amountCents = await getMembershipPriceCents();
+  const freq = await getMembershipFrequency();
+  const { frequency, frequencyType } = frequencyToMercadoPago(freq);
+  const { periodo } = frequencyLabels(freq);
 
   // URL de retorno tras autorizar la suscripción en Mercado Pago.
   const backUrl = env.PUBLIC_BASE_URL
@@ -24,11 +32,13 @@ export async function POST() {
 
   try {
     const subscription = await createMercadoPagoSubscription({
-      reason: "ADIA — Membresía mensual",
+      reason: `ADIA — Membresía (${periodo === "año" ? "anual" : "mensual"})`,
       amountCents,
       payerEmail: session.user.email,
       userId: session.user.id,
       backUrl,
+      frequency,
+      frequencyType,
     });
 
     return NextResponse.json({ checkoutUrl: subscription.init_point });

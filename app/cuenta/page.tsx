@@ -6,7 +6,7 @@ import { TeacherShell } from "@/components/teacher-shell";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FREE_GENERATION_LIMIT } from "@/lib/membership";
-import { getMembershipPriceCents } from "@/lib/settings";
+import { frequencyLabels, getMembershipFrequency, getMembershipPriceCents } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -41,6 +41,8 @@ export default async function AccountPage({
   });
 
   const priceCents = await getMembershipPriceCents();
+  const freq = await getMembershipFrequency();
+  const { sufijo } = frequencyLabels(freq); // "al mes" / "al año" (oferta actual)
   const precioMxn = new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
@@ -63,6 +65,10 @@ export default async function AccountPage({
   // administradores no tienen tope.
   const limit = suscrito ? membership?.generationLimit ?? 0 : FREE_GENERATION_LIMIT;
   const ilimitado = isAdmin || (suscrito && limit >= 999999);
+  // Etiqueta del plan del suscriptor (según lo que contrató) y del ofrecimiento.
+  const planLabelActual = membership?.plan === "ANNUAL" ? "ANUAL" : "MENSUAL";
+  const ofertaPeriodo = freq === "annual" ? "Anual" : "Mensual";
+  const tituloPeriodo = suscrito ? (planLabelActual === "ANUAL" ? "Anual" : "Mensual") : ofertaPeriodo;
 
   return (
     <TeacherShell>
@@ -87,7 +93,7 @@ export default async function AccountPage({
         <div className="grid-3">
           <section className="stat">
             <span className="stat-label">Plan</span>
-            <strong>{suscrito ? "MENSUAL" : "GRATIS"}</strong>
+            <strong>{suscrito ? planLabelActual : "GRATIS"}</strong>
             {isActive ? (
               <p>
                 <BadgeCheck size={14} style={{ verticalAlign: "-2px" }} /> Activa
@@ -111,7 +117,7 @@ export default async function AccountPage({
           </section>
 
           <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12, margin: 0 }}>
-            <h2 style={{ fontSize: 16 }}>ADIA — Membresía Mensual</h2>
+            <h2 style={{ fontSize: 16 }}>ADIA — Membresía {tituloPeriodo}</h2>
             {isActive ? (
               <>
                 <p className="hint">Tu suscripción está activa. ¡Gracias por apoyar el proyecto!</p>
@@ -121,8 +127,8 @@ export default async function AccountPage({
               <>
                 <p className="hint">
                   {canceladaVigente
-                    ? `Tu suscripción está cancelada. Reactívala por ${precioMxn} MXN al mes.`
-                    : `Acceso ilimitado a generación de planeaciones — ${precioMxn} MXN al mes.`}
+                    ? `Tu suscripción está cancelada. Reactívala por ${precioMxn} MXN ${sufijo}.`
+                    : `Acceso ilimitado a generación de planeaciones — ${precioMxn} MXN ${sufijo}.`}
                 </p>
                 <PaymentButton />
               </>
