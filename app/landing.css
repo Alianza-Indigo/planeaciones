@@ -816,6 +816,13 @@
   font-weight: 800;
   font-size: 40px;
   color: var(--lp-bright);
+  margin-bottom: 4px;
+}
+
+.lp-price-alt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-text-2);
   margin-bottom: 18px;
 }
 

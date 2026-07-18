@@ -100,11 +100,11 @@ const PLAN_ESCUELA = [
 ];
 
 export function LandingPage({
-  precioMxn = "$99",
-  periodo = "mes",
+  precioMensual = "$99",
+  precioAnual = "$990",
 }: {
-  precioMxn?: string;
-  periodo?: string;
+  precioMensual?: string;
+  precioAnual?: string;
 }) {
   return (
     <div className="lp" id="top">
@@ -311,8 +311,9 @@ export function LandingPage({
               <h3>Plan Docente</h3>
               <p className="lp-plan-desc">Todo lo que necesitas para planear mejor cada día.</p>
               <div className="lp-price">
-                {precioMxn} <small>MXN / {periodo}</small>
+                {precioMensual} <small>MXN / mes</small>
               </div>
+              <div className="lp-price-alt">o {precioAnual} MXN / año</div>
               <div className="lp-plan-list">
                 {PLAN_DOCENTE.map((item) => (
                   <div className="lp-vs-item good" key={item}>

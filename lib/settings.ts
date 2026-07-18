@@ -3,65 +3,74 @@ import { prisma } from "@/lib/db";
 // Configuración operativa persistida en BD (tabla AppSetting), editable desde
 // el panel admin. Se usa para valores que el negocio ajusta sin redeploy.
 
-const MEMBERSHIP_PRICE_KEY = "membership_annual_price_cents";
-const MEMBERSHIP_FREQUENCY_KEY = "membership_frequency";
+export type Plan = "monthly" | "annual";
 
-// Precio por defecto de la membresía: $99 MXN.
-export const DEFAULT_MEMBERSHIP_PRICE_CENTS = 9900;
+// Se ofrecen ambos planes; cada uno tiene su propio precio. El key mensual
+// reutiliza la clave histórica para conservar el valor ya configurado.
+const MONTHLY_PRICE_KEY = "membership_annual_price_cents";
+const ANNUAL_PRICE_KEY = "membership_price_annual_cents";
 
-export type MembershipFrequency = "monthly" | "annual";
-export const DEFAULT_MEMBERSHIP_FREQUENCY: MembershipFrequency = "monthly";
+export const DEFAULT_MONTHLY_CENTS = 9900; // $99 / mes
+export const DEFAULT_ANNUAL_CENTS = 99000; // $990 / año
 
-// Traduce la frecuencia a los parámetros auto_recurring de Mercado Pago.
-// MP solo acepta frequency_type "days" | "months"; anual = 12 meses.
-export function frequencyToMercadoPago(freq: MembershipFrequency): {
-  frequency: number;
-  frequencyType: "months";
-} {
-  return freq === "annual" ? { frequency: 12, frequencyType: "months" } : { frequency: 1, frequencyType: "months" };
+// Mínimo $10 MXN: Mercado Pago rechaza suscripciones con monto menor.
+export const MIN_PRICE_CENTS = 1000;
+export const MAX_PRICE_CENTS = 10_000_000;
+
+function clampOrDefault(raw: string | undefined, def: number): number {
+  const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isFinite(parsed) && parsed >= MIN_PRICE_CENTS && parsed <= MAX_PRICE_CENTS
+    ? parsed
+    : def;
 }
 
-// Etiquetas de UI para la frecuencia.
-export function frequencyLabels(freq: MembershipFrequency): { periodo: string; sufijo: string; plan: "MONTHLY" | "ANNUAL" } {
-  return freq === "annual"
-    ? { periodo: "año", sufijo: "al año", plan: "ANNUAL" }
-    : { periodo: "mes", sufijo: "al mes", plan: "MONTHLY" };
+async function readPrice(key: string, def: number): Promise<number> {
+  const row = await prisma.appSetting.findUnique({ where: { key } });
+  return clampOrDefault(row?.value, def);
 }
 
-export async function getMembershipFrequency(): Promise<MembershipFrequency> {
-  const row = await prisma.appSetting.findUnique({ where: { key: MEMBERSHIP_FREQUENCY_KEY } });
-  return row?.value === "annual" ? "annual" : "monthly";
-}
-
-export async function setMembershipFrequency(freq: MembershipFrequency): Promise<void> {
+async function writePrice(key: string, cents: number): Promise<void> {
   await prisma.appSetting.upsert({
-    where: { key: MEMBERSHIP_FREQUENCY_KEY },
-    create: { key: MEMBERSHIP_FREQUENCY_KEY, value: freq },
-    update: { value: freq },
-  });
-}
-
-// Límites de cordura para el precio (en centavos): $1 a $100,000 MXN.
-export const MIN_MEMBERSHIP_PRICE_CENTS = 100;
-export const MAX_MEMBERSHIP_PRICE_CENTS = 10_000_000;
-
-export async function getMembershipPriceCents(): Promise<number> {
-  const row = await prisma.appSetting.findUnique({ where: { key: MEMBERSHIP_PRICE_KEY } });
-  const parsed = row ? Number.parseInt(row.value, 10) : NaN;
-  if (
-    Number.isFinite(parsed) &&
-    parsed >= MIN_MEMBERSHIP_PRICE_CENTS &&
-    parsed <= MAX_MEMBERSHIP_PRICE_CENTS
-  ) {
-    return parsed;
-  }
-  return DEFAULT_MEMBERSHIP_PRICE_CENTS;
-}
-
-export async function setMembershipPriceCents(cents: number): Promise<void> {
-  await prisma.appSetting.upsert({
-    where: { key: MEMBERSHIP_PRICE_KEY },
-    create: { key: MEMBERSHIP_PRICE_KEY, value: String(cents) },
+    where: { key },
+    create: { key, value: String(cents) },
     update: { value: String(cents) },
   });
+}
+
+export const getMonthlyPriceCents = () => readPrice(MONTHLY_PRICE_KEY, DEFAULT_MONTHLY_CENTS);
+export const getAnnualPriceCents = () => readPrice(ANNUAL_PRICE_KEY, DEFAULT_ANNUAL_CENTS);
+export const setMonthlyPriceCents = (cents: number) => writePrice(MONTHLY_PRICE_KEY, cents);
+export const setAnnualPriceCents = (cents: number) => writePrice(ANNUAL_PRICE_KEY, cents);
+
+export async function getPlanPriceCents(plan: Plan): Promise<number> {
+  return plan === "annual" ? getAnnualPriceCents() : getMonthlyPriceCents();
+}
+
+// Parámetros de un plan: periodicidad Mercado Pago + etiquetas de UI.
+// MP solo acepta frequency_type "days" | "months"; anual = 12 meses.
+export function planConfig(plan: Plan): {
+  frequency: number;
+  frequencyType: "months";
+  periodo: string;
+  sufijo: string;
+  planLabel: "MONTHLY" | "ANNUAL";
+  reason: string;
+} {
+  return plan === "annual"
+    ? {
+        frequency: 12,
+        frequencyType: "months",
+        periodo: "año",
+        sufijo: "al año",
+        planLabel: "ANNUAL",
+        reason: "ADIA — Membresía anual",
+      }
+    : {
+        frequency: 1,
+        frequencyType: "months",
+        periodo: "mes",
+        sufijo: "al mes",
+        planLabel: "MONTHLY",
+        reason: "ADIA — Membresía mensual",
+      };
 }

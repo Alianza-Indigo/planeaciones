@@ -3,20 +3,25 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin/require-admin";
 import {
-  MAX_MEMBERSHIP_PRICE_CENTS,
-  MIN_MEMBERSHIP_PRICE_CENTS,
-  setMembershipFrequency,
-  setMembershipPriceCents,
+  MAX_PRICE_CENTS,
+  MIN_PRICE_CENTS,
+  setAnnualPriceCents,
+  setMonthlyPriceCents,
 } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
 const schema = z.object({
-  pesos: z.number().positive(),
-  frequency: z.enum(["monthly", "annual"]).optional(),
+  monthlyPesos: z.number().positive(),
+  annualPesos: z.number().positive(),
 });
 
-// Actualiza el precio y la frecuencia de la membresía. Solo ADMIN.
+function toCents(pesos: number): number | null {
+  const cents = Math.round(pesos * 100);
+  return cents >= MIN_PRICE_CENTS && cents <= MAX_PRICE_CENTS ? cents : null;
+}
+
+// Actualiza los precios mensual y anual de la membresía. Solo ADMIN.
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.response) return auth.response;
@@ -26,15 +31,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
   }
 
-  const cents = Math.round(parsed.data.pesos * 100);
-  if (cents < MIN_MEMBERSHIP_PRICE_CENTS || cents > MAX_MEMBERSHIP_PRICE_CENTS) {
-    return NextResponse.json({ error: "El precio está fuera del rango permitido." }, { status: 400 });
+  const monthlyCents = toCents(parsed.data.monthlyPesos);
+  const annualCents = toCents(parsed.data.annualPesos);
+  if (monthlyCents === null || annualCents === null) {
+    return NextResponse.json(
+      { error: "Los precios deben estar entre $10 y $100,000 MXN (mínimo de Mercado Pago)." },
+      { status: 400 },
+    );
   }
 
-  await setMembershipPriceCents(cents);
-  if (parsed.data.frequency) {
-    await setMembershipFrequency(parsed.data.frequency);
-  }
+  await setMonthlyPriceCents(monthlyCents);
+  await setAnnualPriceCents(annualCents);
 
-  return NextResponse.json({ ok: true, cents, frequency: parsed.data.frequency });
+  return NextResponse.json({ ok: true, monthlyCents, annualCents });
 }

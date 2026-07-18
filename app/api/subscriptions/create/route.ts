@@ -3,27 +3,23 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getMercadoPagoEnv } from "@/lib/env";
 import { createMercadoPagoSubscription } from "@/lib/payments/mercadopago";
-import {
-  frequencyToMercadoPago,
-  frequencyLabels,
-  getMembershipFrequency,
-  getMembershipPriceCents,
-} from "@/lib/settings";
+import { getPlanPriceCents, planConfig, type Plan } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await getSession();
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  const body = (await request.json().catch(() => ({}))) as { plan?: string };
+  const plan: Plan = body.plan === "annual" ? "annual" : "monthly";
+  const cfg = planConfig(plan);
+
   const env = getMercadoPagoEnv();
-  const amountCents = await getMembershipPriceCents();
-  const freq = await getMembershipFrequency();
-  const { frequency, frequencyType } = frequencyToMercadoPago(freq);
-  const { periodo } = frequencyLabels(freq);
+  const amountCents = await getPlanPriceCents(plan);
 
   // URL de retorno tras autorizar la suscripción en Mercado Pago.
   const backUrl = env.PUBLIC_BASE_URL
@@ -32,13 +28,13 @@ export async function POST() {
 
   try {
     const subscription = await createMercadoPagoSubscription({
-      reason: `ADIA — Membresía (${periodo === "año" ? "anual" : "mensual"})`,
+      reason: cfg.reason,
       amountCents,
       payerEmail: session.user.email,
       userId: session.user.id,
       backUrl,
-      frequency,
-      frequencyType,
+      frequency: cfg.frequency,
+      frequencyType: cfg.frequencyType,
     });
 
     return NextResponse.json({ checkoutUrl: subscription.init_point });

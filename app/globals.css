@@ -2445,3 +2445,25 @@ textarea::placeholder,
   box-shadow: 0 12px 30px rgba(9, 11, 63, 0.32);
   border: 1px solid rgba(231, 184, 92, 0.3);
 }
+
+/* ── Opciones de plan (cuenta) ── */
+.plan-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(9, 11, 63, 0.1);
+  border-radius: 12px;
+}
+
+.plan-option strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.plan-option span {
+  font-size: 13px;
+  color: var(--muted);
+}

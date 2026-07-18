@@ -6,12 +6,21 @@ import { TeacherShell } from "@/components/teacher-shell";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FREE_GENERATION_LIMIT } from "@/lib/membership";
-import { frequencyLabels, getMembershipFrequency, getMembershipPriceCents } from "@/lib/settings";
+import { getAnnualPriceCents, getMonthlyPriceCents } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("es-MX", { dateStyle: "long" }).format(date);
+}
+
+function mxn(cents: number): string {
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
 }
 
 export default async function AccountPage({
@@ -40,15 +49,7 @@ export default async function AccountPage({
     where: { userId: session.user.id },
   });
 
-  const priceCents = await getMembershipPriceCents();
-  const freq = await getMembershipFrequency();
-  const { sufijo } = frequencyLabels(freq); // "al mes" / "al año" (oferta actual)
-  const precioMxn = new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(priceCents / 100);
+  const [monthlyCents, annualCents] = await Promise.all([getMonthlyPriceCents(), getAnnualPriceCents()]);
 
   const plan = membership?.plan ?? "FREE";
   const used = membership?.generationsUsed ?? 0;
@@ -65,10 +66,7 @@ export default async function AccountPage({
   // administradores no tienen tope.
   const limit = suscrito ? membership?.generationLimit ?? 0 : FREE_GENERATION_LIMIT;
   const ilimitado = isAdmin || (suscrito && limit >= 999999);
-  // Etiqueta del plan del suscriptor (según lo que contrató) y del ofrecimiento.
   const planLabelActual = membership?.plan === "ANNUAL" ? "ANUAL" : "MENSUAL";
-  const ofertaPeriodo = freq === "annual" ? "Anual" : "Mensual";
-  const tituloPeriodo = suscrito ? (planLabelActual === "ANUAL" ? "Anual" : "Mensual") : ofertaPeriodo;
 
   return (
     <TeacherShell>
@@ -76,7 +74,7 @@ export default async function AccountPage({
         <div className="page-header">
           <span className="eyebrow">Mi cuenta</span>
           <h1>Membresía y uso</h1>
-          <p>Consulta tu plan, las generaciones disponibles y tu suscripción mensual.</p>
+          <p>Consulta tu plan, las generaciones disponibles y elige tu suscripción.</p>
         </div>
 
         {sub === "1" && !isActive ? (
@@ -117,20 +115,36 @@ export default async function AccountPage({
           </section>
 
           <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12, margin: 0 }}>
-            <h2 style={{ fontSize: 16 }}>ADIA — Membresía {tituloPeriodo}</h2>
             {isActive ? (
               <>
+                <h2 style={{ fontSize: 16 }}>Membresía {planLabelActual === "ANUAL" ? "Anual" : "Mensual"}</h2>
                 <p className="hint">Tu suscripción está activa. ¡Gracias por apoyar el proyecto!</p>
                 <CancelSubscription />
               </>
             ) : (
               <>
+                <h2 style={{ fontSize: 16 }}>Activa tu acceso ilimitado</h2>
                 <p className="hint">
                   {canceladaVigente
-                    ? `Tu suscripción está cancelada. Reactívala por ${precioMxn} MXN ${sufijo}.`
-                    : `Acceso ilimitado a generación de planeaciones — ${precioMxn} MXN ${sufijo}.`}
+                    ? "Tu suscripción está cancelada. Reactívala con el plan que prefieras:"
+                    : "Genera planeaciones sin límite. Elige tu plan:"}
                 </p>
-                <PaymentButton />
+
+                <div className="plan-option">
+                  <div>
+                    <strong>Mensual</strong>
+                    <span>{mxn(monthlyCents)} al mes</span>
+                  </div>
+                  <PaymentButton plan="monthly" label={`Mensual · ${mxn(monthlyCents)}`} />
+                </div>
+
+                <div className="plan-option">
+                  <div>
+                    <strong>Anual</strong>
+                    <span>{mxn(annualCents)} al año</span>
+                  </div>
+                  <PaymentButton plan="annual" label={`Anual · ${mxn(annualCents)}`} />
+                </div>
               </>
             )}
           </section>

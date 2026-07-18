@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createMercadoPagoPreference } from "@/lib/payments/mercadopago";
-import { getMembershipPriceCents } from "@/lib/settings";
+import { getMonthlyPriceCents } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ export async function POST() {
   }
 
   // Precio configurable desde el panel admin (con fallback a $99 MXN).
-  const amountCents = await getMembershipPriceCents();
+  const amountCents = await getMonthlyPriceCents();
 
   const payment = await prisma.payment.create({
     data: {

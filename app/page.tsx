@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { LandingPage } from "@/components/landing-page";
 import { getSession } from "@/lib/auth";
-import { frequencyLabels, getMembershipFrequency, getMembershipPriceCents } from "@/lib/settings";
+import { getAnnualPriceCents, getMonthlyPriceCents } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +21,18 @@ export default async function HomePage() {
     redirect(session.user.role === "ADMIN" ? "/admin" : "/planner");
   }
 
-  const priceCents = await getMembershipPriceCents();
-  const freq = await getMembershipFrequency();
-  const { periodo } = frequencyLabels(freq);
-  const precioMxn = new Intl.NumberFormat("es-MX", {
+  const [monthlyCents, annualCents] = await Promise.all([
+    getMonthlyPriceCents(),
+    getAnnualPriceCents(),
+  ]);
+  const fmt = new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(priceCents / 100);
+  });
 
-  return <LandingPage precioMxn={precioMxn} periodo={periodo} />;
+  return (
+    <LandingPage precioMensual={fmt.format(monthlyCents / 100)} precioAnual={fmt.format(annualCents / 100)} />
+  );
 }
