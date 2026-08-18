@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     membership: { upsert: vi.fn(), updateMany: vi.fn() },
+    payment: { upsert: vi.fn() },
   },
 }));
 const { getSubscriptionMock } = vi.hoisted(() => ({ getSubscriptionMock: vi.fn() }));
@@ -45,6 +46,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.membership.upsert.mockResolvedValue({});
   prismaMock.membership.updateMany.mockResolvedValue({});
+  prismaMock.payment.upsert.mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -92,6 +94,27 @@ describe("POST /api/stripe/webhook", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ charged: true });
     expect(prismaMock.membership.upsert.mock.calls[0][0].create.plan).toBe("ANNUAL");
+  });
+
+  it("registra el cobro en Payment ante invoice.paid", async () => {
+    getSubscriptionMock.mockResolvedValue(subscription());
+    const res = await call({
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_123", subscription: "sub_1", amount_paid: 9900, currency: "mxn" },
+      },
+    });
+    expect(res.status).toBe(200);
+    const args = prismaMock.payment.upsert.mock.calls[0][0];
+    expect(args.where).toEqual({ providerPaymentId: "in_123" });
+    expect(args.create).toMatchObject({
+      userId: "u1",
+      provider: "stripe",
+      providerPaymentId: "in_123",
+      status: "APPROVED",
+      amountCents: 9900,
+      currency: "MXN",
+    });
   });
 
   it("lee current_period_end del item cuando no está en la suscripción (API 2025+)", async () => {
