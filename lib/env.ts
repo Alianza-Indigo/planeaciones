@@ -12,6 +12,11 @@ const serverEnvSchema = z.object({
   MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
   MERCADOPAGO_SUCCESS_URL: z.string().url(),
   MERCADOPAGO_FAILURE_URL: z.string().url(),
+  // Stripe (método de pago alternativo). Opcionales: sin la clave secreta,
+  // la opción de Stripe simplemente no se ofrece en la UI.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
   PUBLIC_BASE_URL: z.string().url().optional(),
   ADMIN_EMAILS: z.string().default(""),
   DRAFT_TTL_HOURS: z.coerce.number().int().positive().default(24),
@@ -34,6 +39,16 @@ const mercadoPagoEnvSchema = serverEnvSchema.pick({
   PUBLIC_BASE_URL: true,
 });
 
+// Para usar Stripe la clave secreta es obligatoria; el resto es opcional
+// (el secret del webhook se valida por separado en el endpoint).
+const stripeEnvSchema = z.object({
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  PUBLIC_BASE_URL: z.string().url().optional(),
+  MERCADOPAGO_SUCCESS_URL: z.string().url().optional(),
+  MERCADOPAGO_FAILURE_URL: z.string().url().optional(),
+});
+
 const draftEnvSchema = serverEnvSchema.pick({
   DRAFT_TTL_HOURS: true,
 });
@@ -48,6 +63,10 @@ export function getGeminiEnv() {
 
 export function getMercadoPagoEnv() {
   return mercadoPagoEnvSchema.parse(process.env);
+}
+
+export function getStripeEnv() {
+  return stripeEnvSchema.parse(process.env);
 }
 
 export function getDraftEnv() {
