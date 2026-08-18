@@ -207,5 +207,21 @@ async function handleAuthorizedPayment(dataId: string | null) {
     update: data,
   });
 
+  // Registra el cobro en la tabla Payment para que sea visible en el panel
+  // admin. Idempotente: la clave es el id del authorized_payment (@unique).
+  const amount = pre.auto_recurring?.transaction_amount;
+  await prisma.payment.upsert({
+    where: { providerPaymentId: String(ap.id) },
+    create: {
+      userId,
+      provider: "mercadopago",
+      providerPaymentId: String(ap.id),
+      status: "APPROVED",
+      amountCents: typeof amount === "number" ? Math.round(amount * 100) : 0,
+      currency: pre.auto_recurring?.currency_id ?? "MXN",
+    },
+    update: { status: "APPROVED" },
+  });
+
   return NextResponse.json({ ok: true, charged: true });
 }

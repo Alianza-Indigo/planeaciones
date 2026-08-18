@@ -25,6 +25,8 @@ pago con Mercado Pago y Stripe.
   autoritativa) y son idempotentes:
   - Mercado Pago → `POST /api/payments/webhook`
   - Stripe → `POST /api/stripe/webhook`
+- Cada cobro (inicial y recurrente) de ambos proveedores se registra en la tabla
+  `Payment` y queda visible en el panel admin (`/admin/payments`).
 - Sin las variables de un proveedor configuradas, ese método simplemente no se
   ofrece en la UI (Stripe requiere `STRIPE_SECRET_KEY`).
 

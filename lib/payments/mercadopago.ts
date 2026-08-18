@@ -126,7 +126,12 @@ export type MercadoPagoPreapproval = {
   external_reference?: string | null;
   payer_id?: number | string;
   next_payment_date?: string | null;
-  auto_recurring?: { frequency?: number; frequency_type?: string };
+  auto_recurring?: {
+    frequency?: number;
+    frequency_type?: string;
+    transaction_amount?: number;
+    currency_id?: string;
+  };
 };
 
 export async function getMercadoPagoPreapproval(id: string): Promise<MercadoPagoPreapproval> {
