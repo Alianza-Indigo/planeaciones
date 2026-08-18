@@ -63,6 +63,7 @@ model User {
   accounts        Account[]
   sessions        Session[]
   membership      Membership?
+  teacherProfile  TeacherProfile?
   payments        Payment[]
   generations     Generation[]
   drafts          PlanningDraft[]
@@ -75,6 +76,24 @@ model User {
 model AppSetting {
   key       String   @id
   value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Perfil fijo del docente: su identidad (nombre + escuela) y su nivel/grado se
+// estampan en cada planeación desde el servidor, evitando que una cuenta genere
+// planeaciones para otros docentes. `editCount` cuenta las MODIFICACIONES tras
+// el alta (el alta no cuenta); al llegar al tope el docente debe pedir el
+// cambio al administrador, que puede reiniciar el contador.
+model TeacherProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  nombre    String
+  escuela   String
+  nivel     String
+  grado     String
+  editCount Int      @default(0)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 

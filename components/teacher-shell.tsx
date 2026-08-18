@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Sparkles, UserRound } from "lucide-react";
+import { IdCard, LogOut, Menu, Sparkles, UserRound } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,6 +15,7 @@ type NavLink = {
 
 const navLinks: NavLink[] = [
   { href: "/planner", label: "Generación", icon: Sparkles },
+  { href: "/perfil", label: "Mi perfil", icon: IdCard },
   { href: "/cuenta", label: "Mi cuenta", icon: UserRound },
 ];
 

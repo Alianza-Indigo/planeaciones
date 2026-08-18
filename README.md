@@ -30,6 +30,16 @@ pago con Mercado Pago y Stripe.
 - Sin las variables de un proveedor configuradas, ese método simplemente no se
   ofrece en la UI (Stripe requiere `STRIPE_SECRET_KEY`).
 
+## Perfil docente (anti-abuso)
+
+- Cada docente configura una sola vez su **nombre, escuela, nivel y grado** en
+  `/perfil`. Esos datos se **estampan desde el servidor** en cada planeación, así
+  que una cuenta no puede generar a nombre de otros docentes.
+- El docente puede cambiar su perfil hasta **2 veces**; al agotarlas debe pedir el
+  cambio al administrador, que reinicia el contador desde `/admin/users`.
+- Los administradores están exentos (pueden generar con cualquier dato para
+  pruebas internas).
+
 ## Generación
 
 - Los usuarios sin membresía activa tienen un límite gratuito
