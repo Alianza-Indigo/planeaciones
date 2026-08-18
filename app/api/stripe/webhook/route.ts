@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 // de periodo (absoluta), no acumula.
 async function syncFromSubscription(
   subscriptionId: string,
-): Promise<{ status?: string; ignored?: string }> {
+): Promise<{ userId?: string; status?: string; ignored?: string }> {
   const sub = await getStripeSubscription(subscriptionId);
   const userId = sub.metadata?.userId ?? undefined;
   if (!userId) return { ignored: "missing userId metadata" };
@@ -24,7 +24,7 @@ async function syncFromSubscription(
   // gate mantiene el acceso mientras el periodo pagado siga vigente.
   if (sub.status === "canceled" || sub.status === "unpaid" || sub.status === "incomplete_expired") {
     await prisma.membership.updateMany({ where: { userId }, data: { status: "CANCELED" } });
-    return { status: sub.status };
+    return { userId, status: sub.status };
   }
 
   const endSeconds = stripePeriodEndSeconds(sub);
@@ -51,7 +51,35 @@ async function syncFromSubscription(
     update: data,
   });
 
-  return { status: membershipStatus };
+  return { userId, status: membershipStatus };
+}
+
+type StripeInvoice = {
+  id?: string;
+  amount_paid?: number;
+  currency?: string;
+  subscription?: string | null;
+};
+
+// Registra el cobro (invoice) en la tabla Payment para que quede visible en el
+// panel admin. Idempotente: la clave es el id de la invoice (@unique).
+async function recordInvoicePayment(userId: string, invoice: StripeInvoice): Promise<void> {
+  if (!invoice.id) return;
+  const amountCents = typeof invoice.amount_paid === "number" ? invoice.amount_paid : 0;
+  const currency = (invoice.currency ?? "mxn").toUpperCase();
+
+  await prisma.payment.upsert({
+    where: { providerPaymentId: invoice.id },
+    create: {
+      userId,
+      provider: "stripe",
+      providerPaymentId: invoice.id,
+      status: "APPROVED",
+      amountCents,
+      currency,
+    },
+    update: { status: "APPROVED" },
+  });
 }
 
 export async function POST(request: Request) {
@@ -107,16 +135,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, ...(await syncFromSubscription(String(obj.subscription))) });
     }
 
-    // Cargo (inicial o recurrente) ejecutado: extiende el periodo.
+    // Cargo (inicial o recurrente) ejecutado: extiende el periodo y registra
+    // el cobro en la tabla Payment (visible en el panel admin).
     case "invoice.paid":
     case "invoice.payment_succeeded": {
-      const subId = (obj as { subscription?: string | null }).subscription;
+      const invoice = obj as StripeInvoice;
+      const subId = invoice.subscription;
       if (!subId) return NextResponse.json({ ok: true, ignored: "missing subscription on invoice" });
-      return NextResponse.json({
-        ok: true,
-        charged: true,
-        ...(await syncFromSubscription(String(subId))),
-      });
+      const result = await syncFromSubscription(String(subId));
+      if (result.userId) {
+        await recordInvoicePayment(result.userId, invoice);
+      }
+      return NextResponse.json({ ok: true, charged: true, ...result });
     }
 
     // Cambios de estado de la suscripción (pausa, past_due, cancelación programada).

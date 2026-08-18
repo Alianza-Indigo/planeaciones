@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { getSessionMock } = vi.hoisted(() => ({ getSessionMock: vi.fn() }));
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
-    membership: { findUnique: vi.fn(), upsert: vi.fn() },
-    generation: { create: vi.fn(), update: vi.fn() },
+    membership: { findUnique: vi.fn(), upsert: vi.fn(), updateMany: vi.fn() },
+    generation: { create: vi.fn(), update: vi.fn(), count: vi.fn() },
     promptTemplate: { findFirst: vi.fn() },
   },
 }));
@@ -50,7 +50,10 @@ beforeEach(() => {
   prismaMock.promptTemplate.findFirst.mockResolvedValue(null);
   prismaMock.generation.create.mockResolvedValue({ id: "g1" });
   prismaMock.generation.update.mockResolvedValue({});
+  prismaMock.generation.count.mockResolvedValue(0);
   prismaMock.membership.upsert.mockResolvedValue({});
+  // Reserva de cupo gratuito: por defecto hay cupo (count 1).
+  prismaMock.membership.updateMany.mockResolvedValue({ count: 1 });
   generateMock.mockResolvedValue({
     title: "Plan",
     content: "Contenido generado",
@@ -82,13 +85,15 @@ describe("POST /api/generate", () => {
       generationsUsed: 100,
       generationLimit: 100,
     });
+    // La reserva atómica no encuentra cupo disponible.
+    prismaMock.membership.updateMany.mockResolvedValue({ count: 0 });
     const res = await call(validBody);
     expect(res.status).toBe(403);
     expect(generateMock).not.toHaveBeenCalled();
     expect(prismaMock.generation.create).not.toHaveBeenCalled();
   });
 
-  it("permite generar al usuario FREE bajo el límite e incrementa el uso", async () => {
+  it("permite generar al usuario FREE bajo el límite y reserva el cupo", async () => {
     prismaMock.membership.findUnique.mockResolvedValue({
       status: "FREE",
       generationsUsed: 1,
@@ -98,7 +103,19 @@ describe("POST /api/generate", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ draftId: "d1" });
     expect(generateMock).toHaveBeenCalledTimes(1);
-    expect(prismaMock.membership.upsert).toHaveBeenCalledTimes(1);
+    // La reserva del cupo se hace de forma atómica antes de generar.
+    expect(prismaMock.membership.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { generationsUsed: { increment: 1 } } }),
+    );
+  });
+
+  it("bloquea con 429 cuando se supera el límite de ritmo", async () => {
+    prismaMock.membership.findUnique.mockResolvedValue(null);
+    prismaMock.generation.count.mockResolvedValue(99);
+    const res = await call(validBody);
+    expect(res.status).toBe(429);
+    expect(generateMock).not.toHaveBeenCalled();
+    expect(prismaMock.generation.create).not.toHaveBeenCalled();
   });
 
   it("permite generar sin tope al miembro ACTIVE aunque supere el límite", async () => {

@@ -23,17 +23,21 @@ export default async function AdminPaymentsPage() {
           <thead>
             <tr>
               <th>Usuario</th>
+              <th>Fecha</th>
               <th>Importe</th>
               <th>Estado</th>
               <th>Proveedor</th>
+              <th>Referencia</th>
             </tr>
           </thead>
           <tbody>
             {payments.map((payment) => (
               <tr key={payment.id}>
                 <td>{payment.user.email}</td>
+                <td>{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" }).format(payment.createdAt)}</td>
                 <td>${(payment.amountCents / 100).toFixed(2)} {payment.currency}</td>
                 <td>{payment.status}</td>
+                <td>{payment.provider}</td>
                 <td>{payment.providerPaymentId ?? payment.providerPreferenceId ?? "-"}</td>
               </tr>
             ))}
