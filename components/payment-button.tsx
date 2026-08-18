@@ -6,18 +6,23 @@ import { useState } from "react";
 export function PaymentButton({
   plan = "monthly",
   label = "Suscribirme",
+  provider = "mercadopago",
 }: {
   plan?: "monthly" | "annual";
   label?: string;
+  provider?: "mercadopago" | "stripe";
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ambos endpoints reciben { plan } y devuelven { checkoutUrl }.
+  const endpoint = provider === "stripe" ? "/api/stripe/checkout" : "/api/subscriptions/create";
 
   async function checkout() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/subscriptions/create", {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan }),

@@ -51,6 +51,9 @@ export default async function AccountPage({
 
   const [monthlyCents, annualCents] = await Promise.all([getMonthlyPriceCents(), getAnnualPriceCents()]);
 
+  // Stripe solo se ofrece si está configurado (clave secreta presente).
+  const stripeEnabled = Boolean(process.env.STRIPE_SECRET_KEY);
+
   const plan = membership?.plan ?? "FREE";
   const used = membership?.generationsUsed ?? 0;
   const periodEnd = membership?.currentPeriodEndsAt ?? null;
@@ -135,7 +138,16 @@ export default async function AccountPage({
                     <strong>Mensual</strong>
                     <span>{mxn(monthlyCents)} al mes</span>
                   </div>
-                  <PaymentButton plan="monthly" label={`Mensual · ${mxn(monthlyCents)}`} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <PaymentButton
+                      plan="monthly"
+                      provider="mercadopago"
+                      label={stripeEnabled ? "Mercado Pago" : `Mensual · ${mxn(monthlyCents)}`}
+                    />
+                    {stripeEnabled ? (
+                      <PaymentButton plan="monthly" provider="stripe" label="Tarjeta (Stripe)" />
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="plan-option">
@@ -143,7 +155,16 @@ export default async function AccountPage({
                     <strong>Anual</strong>
                     <span>{mxn(annualCents)} al año</span>
                   </div>
-                  <PaymentButton plan="annual" label={`Anual · ${mxn(annualCents)}`} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <PaymentButton
+                      plan="annual"
+                      provider="mercadopago"
+                      label={stripeEnabled ? "Mercado Pago" : `Anual · ${mxn(annualCents)}`}
+                    />
+                    {stripeEnabled ? (
+                      <PaymentButton plan="annual" provider="stripe" label="Tarjeta (Stripe)" />
+                    ) : null}
+                  </div>
                 </div>
               </>
             )}

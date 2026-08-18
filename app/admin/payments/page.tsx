@@ -15,7 +15,7 @@ export default async function AdminPaymentsPage() {
         <div>
           <span className="eyebrow">Admin</span>
           <h1>Pagos</h1>
-          <p>Preferencias y eventos recibidos desde Mercado Pago.</p>
+          <p>Preferencias y eventos recibidos desde Mercado Pago y Stripe.</p>
         </div>
       </div>
       <section className="panel">

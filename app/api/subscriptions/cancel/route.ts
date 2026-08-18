@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { cancelMercadoPagoSubscription } from "@/lib/payments/mercadopago";
+import { cancelStripeSubscription } from "@/lib/payments/stripe";
 
 export const runtime = "nodejs";
 
@@ -16,15 +17,30 @@ export async function POST() {
     where: { userId: session.user.id },
   });
 
-  if (!membership?.mpPreapprovalId) {
+  // Se cancela en el proveedor que originó la suscripción activa.
+  const provider = membership?.stripeSubscriptionId
+    ? "stripe"
+    : membership?.mpPreapprovalId
+      ? "mercadopago"
+      : null;
+
+  if (!provider) {
     return NextResponse.json({ error: "No tienes una suscripción activa." }, { status: 400 });
   }
 
   try {
-    await cancelMercadoPagoSubscription(membership.mpPreapprovalId);
+    if (provider === "stripe") {
+      await cancelStripeSubscription(membership!.stripeSubscriptionId!);
+    } else {
+      await cancelMercadoPagoSubscription(membership!.mpPreapprovalId!);
+    }
   } catch (error) {
+    const proveedor = provider === "stripe" ? "Stripe" : "Mercado Pago";
     return NextResponse.json(
-      { error: "No se pudo cancelar en Mercado Pago.", details: error instanceof Error ? error.message : null },
+      {
+        error: `No se pudo cancelar en ${proveedor}.`,
+        details: error instanceof Error ? error.message : null,
+      },
       { status: 502 },
     );
   }
