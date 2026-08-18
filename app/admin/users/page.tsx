@@ -9,6 +9,7 @@ export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     take: 100,
+    include: { teacherProfile: true },
   });
 
   const data = users.map((user) => ({
@@ -16,6 +17,15 @@ export default async function AdminUsersPage() {
     name: user.name,
     email: user.email,
     role: user.role,
+    profile: user.teacherProfile
+      ? {
+          nombre: user.teacherProfile.nombre,
+          escuela: user.teacherProfile.escuela,
+          nivel: user.teacherProfile.nivel,
+          grado: user.teacherProfile.grado,
+          editCount: user.teacherProfile.editCount,
+        }
+      : null,
   }));
 
   return (

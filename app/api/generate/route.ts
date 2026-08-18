@@ -8,6 +8,7 @@ import {
   buildPlanningPrompt,
   defaultPlanningPromptTemplate,
 } from "@/lib/generation/build-planning-prompt";
+import { buildFase, buildGradoLabel, isNivel } from "@/lib/generation/nivel";
 import { planningInputSchema } from "@/lib/generation/types";
 import { FREE_GENERATION_LIMIT } from "@/lib/membership";
 
@@ -33,8 +34,32 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const input = parsed.data;
   const userId = session.user.id;
+
+  // Los administradores generan sin tope ni límite de ritmo (pruebas internas).
+  const isAdmin = session.user.role === "ADMIN";
+
+  // Perfil docente: es la identidad fija de la cuenta. Se estampa aquí desde el
+  // servidor —ignorando lo que envíe el cliente— para que una cuenta no pueda
+  // generar planeaciones a nombre de otros docentes/escuelas/grados. Los
+  // administradores están exentos (pueden probar con cualquier dato).
+  let input = parsed.data;
+  if (!isAdmin) {
+    const profile = await prisma.teacherProfile.findUnique({ where: { userId } });
+    if (!profile || !isNivel(profile.nivel)) {
+      return NextResponse.json(
+        { error: "Configura tu perfil docente antes de generar tu primera planeación." },
+        { status: 409 },
+      );
+    }
+    input = {
+      ...input,
+      nombreDocente: profile.nombre,
+      nombreEscuela: profile.escuela,
+      grado: buildGradoLabel(profile.nivel, profile.grado),
+      fase: buildFase(profile.nivel, profile.grado),
+    };
+  }
 
   // Guard de membresía: usuarios FREE tienen un límite de generaciones; los
   // miembros activos generan sin tope. Se verifica antes de gastar la llamada al LLM.
@@ -48,9 +73,6 @@ export async function POST(request: Request) {
     !membership?.currentPeriodEndsAt || membership.currentPeriodEndsAt > new Date();
   const membershipActive =
     (membership?.status === "ACTIVE" || membership?.status === "CANCELED") && vigente;
-
-  // Los administradores generan sin tope ni límite de ritmo (pruebas internas).
-  const isAdmin = session.user.role === "ADMIN";
 
   // Límite de ritmo (todos menos admin): cuenta los intentos recientes.
   if (!isAdmin) {

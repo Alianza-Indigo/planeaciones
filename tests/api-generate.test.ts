@@ -6,6 +6,7 @@ const { prismaMock } = vi.hoisted(() => ({
     membership: { findUnique: vi.fn(), upsert: vi.fn(), updateMany: vi.fn() },
     generation: { create: vi.fn(), update: vi.fn(), count: vi.fn() },
     promptTemplate: { findFirst: vi.fn() },
+    teacherProfile: { findUnique: vi.fn() },
   },
 }));
 const { generateMock } = vi.hoisted(() => ({ generateMock: vi.fn() }));
@@ -54,6 +55,13 @@ beforeEach(() => {
   prismaMock.membership.upsert.mockResolvedValue({});
   // Reserva de cupo gratuito: por defecto hay cupo (count 1).
   prismaMock.membership.updateMany.mockResolvedValue({ count: 1 });
+  // Perfil docente presente por defecto (requerido para generar).
+  prismaMock.teacherProfile.findUnique.mockResolvedValue({
+    nombre: "Prof. Diana",
+    escuela: "Escuela Base",
+    nivel: "Primaria",
+    grado: "3°",
+  });
   generateMock.mockResolvedValue({
     title: "Plan",
     content: "Contenido generado",
@@ -106,6 +114,47 @@ describe("POST /api/generate", () => {
     // La reserva del cupo se hace de forma atómica antes de generar.
     expect(prismaMock.membership.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { generationsUsed: { increment: 1 } } }),
+    );
+  });
+
+  it("exige perfil docente: 409 si el no-admin no lo tiene (no llama al LLM)", async () => {
+    prismaMock.teacherProfile.findUnique.mockResolvedValue(null);
+    const res = await call(validBody);
+    expect(res.status).toBe(409);
+    expect(generateMock).not.toHaveBeenCalled();
+    expect(prismaMock.generation.create).not.toHaveBeenCalled();
+  });
+
+  it("estampa la identidad del perfil ignorando lo que envía el cliente", async () => {
+    prismaMock.membership.findUnique.mockResolvedValue(null);
+    const res = await call({
+      ...validBody,
+      nombreDocente: "Impostor",
+      nombreEscuela: "Otra Escuela",
+      grado: "6 primaria",
+      fase: "Fase 5",
+    });
+    expect(res.status).toBe(200);
+    // El primer argumento de la generación es el input ya normalizado.
+    expect(generateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nombreDocente: "Prof. Diana",
+        nombreEscuela: "Escuela Base",
+        grado: "3 primaria",
+        fase: "Fase 4",
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("el admin genera sin perfil (exento) y con los datos que envía", async () => {
+    getSessionMock.mockResolvedValue({ user: { id: "admin1", role: "ADMIN" } });
+    prismaMock.teacherProfile.findUnique.mockResolvedValue(null);
+    const res = await call(validBody);
+    expect(res.status).toBe(200);
+    expect(generateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ nombreDocente: "Diana" }),
+      expect.any(String),
     );
   });
 

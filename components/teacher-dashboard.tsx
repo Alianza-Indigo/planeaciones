@@ -466,6 +466,13 @@ export function TeacherDashboard() {
   const [driveUrl, setDriveUrl] = useState<string | null>(null);
   const [materialesData, setMaterialesData] = useState<MaterialesData | null>(null);
 
+  // Perfil docente: identidad fija de la cuenta. Cuando existe, precarga y
+  // bloquea nombre/escuela/nivel/grado (el servidor los estampa igual). Los
+  // administradores quedan exentos.
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+  const [profileLocked, setProfileLocked] = useState(false);
+  const [profileMissing, setProfileMissing] = useState(false);
+
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
   const camposFiltrados = useMemo(
@@ -508,6 +515,33 @@ export function TeacherDashboard() {
   useEffect(() => {
     if (!gradosDisponibles.includes(grado)) setGrado(gradosDisponibles[0]);
   }, [gradosDisponibles, grado]);
+
+  // Carga el perfil docente y, si existe, fija los datos de identidad.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let cancelado = false;
+    fetch("/api/teacher/profile")
+      .then((res) => res.json())
+      .then((data: { profile: { nombre: string; escuela: string; nivel: string; grado: string } | null }) => {
+        if (cancelado) return;
+        if (data.profile) {
+          setNombreDocente(data.profile.nombre);
+          setNombreEscuela(data.profile.escuela);
+          if ((NIVELES_EDU as readonly string[]).includes(data.profile.nivel)) {
+            setNivel(data.profile.nivel as NivelEdu);
+          }
+          setGrado(data.profile.grado);
+          setProfileLocked(true);
+          setProfileMissing(false);
+        } else if (!isAdmin) {
+          setProfileMissing(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelado = true;
+    };
+  }, [status, isAdmin]);
 
   // Cargar campos del grado y limpiar selecciones dependientes.
   useEffect(() => {
@@ -658,6 +692,10 @@ export function TeacherDashboard() {
     const campos = camposActivos.filter(Boolean);
     const contenidos = [...new Set(selectedContenidos.map((c) => c.titulo))];
 
+    if (profileMissing) {
+      setError("Configura tu perfil docente antes de generar. Ve a «Mi perfil».");
+      return;
+    }
     if (!nombreDocente || !nombreEscuela || !periodoPlaneado || !proyecto) {
       setError("Completa los datos del docente y el tema detonador.");
       return;
@@ -967,6 +1005,23 @@ export function TeacherDashboard() {
 
               {/* Datos del docente */}
               <div className="section-label">Datos del docente</div>
+              {profileMissing ? (
+                <p className="alert" style={{ marginBottom: 12 }}>
+                  Configura tu perfil docente antes de generar.{" "}
+                  <a href="/perfil" style={{ textDecoration: "underline" }}>
+                    Ir a Mi perfil
+                  </a>
+                  .
+                </p>
+              ) : profileLocked ? (
+                <p className="hint" style={{ marginBottom: 12 }}>
+                  Tu nombre, escuela, nivel y grado provienen de tu perfil.{" "}
+                  <a href="/perfil" style={{ textDecoration: "underline" }}>
+                    Editar mi perfil
+                  </a>
+                  .
+                </p>
+              ) : null}
               <div className="card">
                 <div className="grid-3">
                   <div className="field">
@@ -976,6 +1031,7 @@ export function TeacherDashboard() {
                       value={nombreDocente}
                       onChange={(e) => setNombreDocente(e.target.value)}
                       placeholder="Ej: María González López"
+                      disabled={profileLocked}
                     />
                   </div>
                   <div className="field">
@@ -985,6 +1041,7 @@ export function TeacherDashboard() {
                       value={nombreEscuela}
                       onChange={(e) => setNombreEscuela(e.target.value)}
                       placeholder="Ej: Primaria Benito Juárez"
+                      disabled={profileLocked}
                     />
                   </div>
                   <div className="field">
@@ -1005,7 +1062,11 @@ export function TeacherDashboard() {
                 <div className="grid-3" style={{ marginBottom: 16 }}>
                   <div className="field">
                     <label>Nivel educativo</label>
-                    <select value={nivel} onChange={(e) => setNivel(e.target.value as NivelEdu)}>
+                    <select
+                      value={nivel}
+                      onChange={(e) => setNivel(e.target.value as NivelEdu)}
+                      disabled={profileLocked}
+                    >
                       {NIVELES_EDU.map((n) => (
                         <option key={n}>{n}</option>
                       ))}
@@ -1013,7 +1074,11 @@ export function TeacherDashboard() {
                   </div>
                   <div className="field">
                     <label>Grado</label>
-                    <select value={grado} onChange={(e) => setGrado(e.target.value)}>
+                    <select
+                      value={grado}
+                      onChange={(e) => setGrado(e.target.value)}
+                      disabled={profileLocked}
+                    >
                       {gradosDisponibles.map((g) => (
                         <option key={g}>{g}</option>
                       ))}
