@@ -150,6 +150,11 @@ model Membership {
   userId               String           @unique
   plan                 PlanType         @default(FREE)
   status               MembershipStatus @default(FREE)
+  // Pausa administrativa: cuando es true, el docente no puede generar hasta que
+  // un admin la reactive. Es ortogonal a `status` (no lo pisa), así al reactivar
+  // se conserva el estado real de la suscripción (ACTIVE/CANCELED/FREE) sin tocar
+  // al proveedor de pago.
+  suspended            Boolean          @default(false)
   currentPeriodEndsAt  DateTime?
   generationLimit      Int              @default(4)
   generationsUsed      Int              @default(0)

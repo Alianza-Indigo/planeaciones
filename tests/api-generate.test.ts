@@ -101,6 +101,30 @@ describe("POST /api/generate", () => {
     expect(prismaMock.generation.create).not.toHaveBeenCalled();
   });
 
+  it("bloquea con 403 al docente con membresía suspendida (no llama al LLM)", async () => {
+    prismaMock.membership.findUnique.mockResolvedValue({
+      status: "ACTIVE",
+      suspended: true,
+      generationsUsed: 0,
+      generationLimit: 999999,
+      currentPeriodEndsAt: new Date("2999-01-01"),
+    });
+    const res = await call(validBody);
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toContain("pausada");
+    expect(generateMock).not.toHaveBeenCalled();
+    expect(prismaMock.generation.create).not.toHaveBeenCalled();
+  });
+
+  it("el admin genera aunque su membresía esté suspendida (exento)", async () => {
+    getSessionMock.mockResolvedValue({ user: { id: "admin1", role: "ADMIN" } });
+    prismaMock.membership.findUnique.mockResolvedValue({ status: "ACTIVE", suspended: true });
+    const res = await call(validBody);
+    expect(res.status).toBe(200);
+    expect(generateMock).toHaveBeenCalledTimes(1);
+  });
+
   it("permite generar al usuario FREE bajo el límite y reserva el cupo", async () => {
     prismaMock.membership.findUnique.mockResolvedValue({
       status: "FREE",

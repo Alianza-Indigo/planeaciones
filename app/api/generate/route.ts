@@ -65,6 +65,18 @@ export async function POST(request: Request) {
   // miembros activos generan sin tope. Se verifica antes de gastar la llamada al LLM.
   const membership = await prisma.membership.findUnique({ where: { userId } });
 
+  // Pausa administrativa: si un admin suspendió la membresía, se bloquea toda
+  // generación hasta que la reactive. Los administradores están exentos.
+  if (!isAdmin && membership?.suspended) {
+    return NextResponse.json(
+      {
+        error:
+          "Tu membresía está pausada. Escribe a contacto@alianzaindigo.org para reactivarla.",
+      },
+      { status: 403 },
+    );
+  }
+
   // Una membresía da acceso si su periodo no ha vencido. CANCELED también
   // cuenta: al cancelar la suscripción se conserva el acceso hasta el fin del
   // periodo ya pagado. La comprobación de vigencia evita que una membresía

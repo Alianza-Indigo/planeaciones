@@ -59,6 +59,8 @@ export default async function AccountPage({
   const periodEnd = membership?.currentPeriodEndsAt ?? null;
   const isAdmin = session.user.role === "ADMIN";
   const status = membership?.status;
+  // Pausa administrativa: bloquea la generación hasta que un admin reactive.
+  const suspended = Boolean(membership?.suspended);
   const vigente = !periodEnd || periodEnd > new Date();
   // Con acceso de pago: suscripción activa, o cancelada pero aún dentro del
   // periodo ya pagado.
@@ -90,12 +92,22 @@ export default async function AccountPage({
             El pago no se completó. Puedes intentarlo de nuevo.
           </p>
         ) : null}
+        {suspended ? (
+          <div className="alert" style={{ marginBottom: 16 }}>
+            <strong>Tu membresía está pausada.</strong> No puedes generar planeaciones por ahora.
+            Escribe a{" "}
+            <a href="mailto:contacto@alianzaindigo.org">contacto@alianzaindigo.org</a> para
+            reactivarla.
+          </div>
+        ) : null}
 
         <div className="grid-3">
           <section className="stat">
             <span className="stat-label">Plan</span>
-            <strong>{suscrito ? planLabelActual : "GRATIS"}</strong>
-            {isActive ? (
+            <strong>{suspended ? "PAUSADA" : suscrito ? planLabelActual : "GRATIS"}</strong>
+            {suspended ? (
+              <p>Pausada por el administrador.</p>
+            ) : isActive ? (
               <p>
                 <BadgeCheck size={14} style={{ verticalAlign: "-2px" }} /> Activa
                 {periodEnd ? ` · próximo cargo el ${formatDate(periodEnd)}` : ""}
@@ -118,7 +130,15 @@ export default async function AccountPage({
           </section>
 
           <section className="card" style={{ display: "flex", flexDirection: "column", gap: 12, margin: 0 }}>
-            {isActive ? (
+            {suspended ? (
+              <>
+                <h2 style={{ fontSize: 16 }}>Membresía pausada</h2>
+                <p className="hint">
+                  Un administrador pausó tu cuenta. Para reactivarla, escribe a{" "}
+                  <a href="mailto:contacto@alianzaindigo.org">contacto@alianzaindigo.org</a>.
+                </p>
+              </>
+            ) : isActive ? (
               <>
                 <h2 style={{ fontSize: 16 }}>Membresía {planLabelActual === "ANUAL" ? "Anual" : "Mensual"}</h2>
                 <p className="hint">Tu suscripción está activa. ¡Gracias por apoyar el proyecto!</p>
