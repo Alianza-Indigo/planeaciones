@@ -1373,6 +1373,7 @@
     "LENGUAJES": {
       "contenidos": [
         "Escritura de nombres en la lengua materna.",
+        "Lectura compartida en voz alta.",
         "Descripción de objetos, personas, seres vivos y lugares.",
         "Uso de elementos y convenciones de la escritura presentes en la cotidianidad.",
         "Uso del dibujo y/o la escritura para recordar actividades y acuerdos escolares.",
@@ -1397,6 +1398,7 @@
       ],
       "pda": [
         "(1) Escribe su nombre y apellidos y de sus de familiares, profesores, compañeros y otras personas de su entorno para indicar autoría, pertenencia e identidad. (2) Compara características de c, s, z, b, v, h, g, j, i, y, ll, k, q, r, rr, w, x, etcétera.",
+        "(1) Relee o pide que le relean en voz alta algún fragmento o pasaje para comprender mejor el significado de lo leído. (2) Comenta con otras personas el contenido de textos que ha escuchado: actitudes de los protagonistas de una historia; datos o situaciones interesantes; alternativas para resolver un problema o atender una necesidad; experiencias personales; reportes sobre noticias, etcétera. (3) Lee en voz alta, para otros y para sí, diversos textos, como cuentos, poemas, canciones, notas informativas, cartas, anuncios publicitarios, etcétera.",
         "(1) Describe en forma oral y escrita, en su lengua materna, objetos, personas, seres vivos y lugares de su entorno natural y social. (2) Representa objetos, personas, seres vivos y lugares de forma plástica, sonora, corporal, teatral o por medio de otros lenguajes artísticos.",
         "(1) Identifica letras en escritos en español y en lengua(s) indígena(s). (2) Diferencia elementos y convenciones de la escritura en español y en alguna(s) lengua(s) indígena(s). (2) (1) Reconoce letras que pueden relacionarse con sonidos distintos, así como sonidos equivalentes que pueden relacionarse con letras distintas y asocia los sonidos vocálicos y consonánticos con sus letras correspondientes. (2) Escribe nombres propios iniciando con una mayúscula, empleando espacios entre palabras y comienza a hacer uso de algunos signos de puntuación en su escritura, reflexionando sobre estas convenciones para reconocer de manera inicial la existencia de reglas ortográficas.",
         "(1) Registra por escrito instrucciones breves para realizar actividades en casa, listas de materiales o datos, asentar normas, etcétera.",
@@ -1422,6 +1424,9 @@
       "byContenido": {
         "Escritura de nombres en la lengua materna.": [
           "(1) Escribe su nombre y apellidos y de sus de familiares, profesores, compañeros y otras personas de su entorno para indicar autoría, pertenencia e identidad. (2) Compara características de c, s, z, b, v, h, g, j, i, y, ll, k, q, r, rr, w, x, etcétera."
+        ],
+        "Lectura compartida en voz alta.": [
+          "(1) Relee o pide que le relean en voz alta algún fragmento o pasaje para comprender mejor el significado de lo leído. (2) Comenta con otras personas el contenido de textos que ha escuchado: actitudes de los protagonistas de una historia; datos o situaciones interesantes; alternativas para resolver un problema o atender una necesidad; experiencias personales; reportes sobre noticias, etcétera. (3) Lee en voz alta, para otros y para sí, diversos textos, como cuentos, poemas, canciones, notas informativas, cartas, anuncios publicitarios, etcétera."
         ],
         "Descripción de objetos, personas, seres vivos y lugares.": [
           "(1) Describe en forma oral y escrita, en su lengua materna, objetos, personas, seres vivos y lugares de su entorno natural y social. (2) Representa objetos, personas, seres vivos y lugares de forma plástica, sonora, corporal, teatral o por medio de otros lenguajes artísticos."
