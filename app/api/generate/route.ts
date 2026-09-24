@@ -191,7 +191,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "No se pudo generar la planeacion.", details: error instanceof Error ? error.message : null },
+      { error: "Sistema ocupado, intente más tarde.", details: error instanceof Error ? error.message : null },
       { status: 502 },
     );
   }

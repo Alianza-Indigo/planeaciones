@@ -746,7 +746,7 @@ export function TeacherDashboard() {
     const payload = await response.json();
     if (!response.ok) {
       setLoading(false);
-      setError(payload.error ?? "No se pudo generar la planeación.");
+      setError(payload.error ?? "Sistema ocupado, intente más tarde.");
       if (response.status === 403) setUpgrade(true);
       if (response.status === 401) setNeedLogin(true);
       return;
