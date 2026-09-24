@@ -7,7 +7,7 @@ const serverEnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
-  GEMINI_MODEL: z.string().default("gemini-3.1-flash-lite"),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash-lite"),
   MERCADOPAGO_ACCESS_TOKEN: z.string().min(1),
   MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
   MERCADOPAGO_SUCCESS_URL: z.string().url(),

@@ -10,7 +10,7 @@ function isSet(value: string | undefined): boolean {
 
 export default async function AdminSettingsPage() {
   const adminEmails = getAdminEmails();
-  const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const ttl = process.env.DRAFT_TTL_HOURS || "24";
   const monthlyCents = await getMonthlyPriceCents();
   const annualCents = await getAnnualPriceCents();
