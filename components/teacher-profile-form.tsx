@@ -3,13 +3,19 @@
 import { BadgeCheck, Loader2, Lock, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { GRADOS_POR_NIVEL, NIVELES, type NivelEdu } from "@/lib/generation/nivel";
+import {
+  GRADOS_POR_NIVEL,
+  MATERIAS_SECUNDARIA,
+  NIVELES,
+  type NivelEdu,
+} from "@/lib/generation/nivel";
 
 type Profile = {
   nombre: string;
   escuela: string;
   nivel: string;
   grado: string;
+  materia: string | null;
   editCount: number;
 };
 
@@ -33,6 +39,7 @@ export function TeacherProfileForm() {
   const [escuela, setEscuela] = useState("");
   const [nivel, setNivel] = useState<NivelEdu>("Primaria");
   const [grado, setGrado] = useState("1°");
+  const [materia, setMateria] = useState("");
 
   useEffect(() => {
     fetch("/api/teacher/profile")
@@ -48,6 +55,7 @@ export function TeacherProfileForm() {
             setNivel(data.profile.nivel as NivelEdu);
           }
           setGrado(data.profile.grado);
+          setMateria(data.profile.materia ?? "");
         }
       })
       .catch(() => setError("No se pudo cargar tu perfil."))
@@ -60,8 +68,10 @@ export function TeacherProfileForm() {
     if (!gradosDisponibles.includes(grado)) setGrado(gradosDisponibles[0]);
   }, [gradosDisponibles, grado]);
 
-  // Bloqueado: ya tiene perfil y agotó sus cambios. Debe pedirlo al admin.
-  const locked = hasProfile && remaining <= 0;
+  // Los perfiles de secundaria creados antes de este cambio pueden completar
+  // su materia aunque ya hayan agotado sus ediciones.
+  const needsSecondarySubject = hasProfile && nivel === "Secundaria" && !materia;
+  const locked = hasProfile && remaining <= 0 && !needsSecondarySubject;
 
   async function save() {
     setSaving(true);
@@ -71,7 +81,13 @@ export function TeacherProfileForm() {
       const res = await fetch("/api/teacher/profile", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre, escuela, nivel, grado }),
+        body: JSON.stringify({
+          nombre,
+          escuela,
+          nivel,
+          grado,
+          materia: nivel === "Secundaria" ? materia : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -98,7 +114,11 @@ export function TeacherProfileForm() {
 
   return (
     <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
-      {!hasProfile ? (
+      {needsSecondarySubject ? (
+        <p className="alert" style={{ margin: 0 }}>
+          Selecciona la materia que impartes. Este ajuste no consumirá un cambio de perfil.
+        </p>
+      ) : !hasProfile ? (
         <p className="hint">
           Configura tu identidad docente. Estos datos se usan en todas tus planeaciones y solo
           podrás cambiarlos <strong>{maxEdits} veces</strong>; después deberás pedírselo al
@@ -166,6 +186,21 @@ export function TeacherProfileForm() {
         </label>
       </div>
 
+      {nivel === "Secundaria" ? (
+        <label className="field">
+          <span>Materia que impartes</span>
+          <select value={materia} onChange={(e) => setMateria(e.target.value)} disabled={locked}>
+            <option value="">Selecciona una materia</option>
+            {MATERIAS_SECUNDARIA.map((m) => (
+              <option key={m} value={m}>
+                {m === "CIENCIAS" ? "CIENCIAS (Biología, Física y Química)" : m}
+              </option>
+            ))}
+          </select>
+          <span className="hint">Podrás generar esta materia para 1.º, 2.º y 3.º.</span>
+        </label>
+      ) : null}
+
       {error ? <p className="alert" style={{ margin: 0 }}>{error}</p> : null}
       {savedOk ? (
         <p className="hint" style={{ margin: 0, color: "var(--ok, #157347)" }}>
@@ -178,7 +213,12 @@ export function TeacherProfileForm() {
           className="button primary"
           type="button"
           onClick={save}
-          disabled={saving || !nombre.trim() || !escuela.trim()}
+          disabled={
+            saving ||
+            !nombre.trim() ||
+            !escuela.trim() ||
+            (nivel === "Secundaria" && !materia)
+          }
           style={{ alignSelf: "flex-start" }}
         >
           {saving ? <Loader2 size={17} /> : <Save size={17} />}

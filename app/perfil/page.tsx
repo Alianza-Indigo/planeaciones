@@ -34,7 +34,8 @@ export default async function PerfilPage() {
           <span className="eyebrow">Perfil docente</span>
           <h1>Mi perfil</h1>
           <p>
-            Tu nombre, escuela, nivel y grado se usan automáticamente en todas tus planeaciones.
+            Tu nombre, escuela y nivel se usan automáticamente en todas tus planeaciones. En
+            secundaria también se fija tu materia y puedes planear para cualquiera de los tres grados.
           </p>
         </div>
         <TeacherProfileForm />

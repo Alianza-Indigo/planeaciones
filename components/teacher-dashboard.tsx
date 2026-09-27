@@ -38,6 +38,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { Contenido } from "@/lib/curriculum/types";
 import {
+  isMateriaSecundaria,
+  resolveMateriaSecundaria,
+} from "@/lib/generation/nivel";
+import {
   esUrl,
   limpiarDocumento,
   materialesAtexto,
@@ -472,12 +476,23 @@ export function TeacherDashboard() {
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
   const [profileLocked, setProfileLocked] = useState(false);
   const [profileMissing, setProfileMissing] = useState(false);
+  const [profileMateria, setProfileMateria] = useState<string | null>(null);
 
   const gradoLabel = useMemo(() => buildGradoLabel(nivel, grado), [nivel, grado]);
   const gradosDisponibles = GRADOS_POR_NIVEL[nivel];
+  const materiaSecundariaActual = useMemo(() => {
+    if (nivel !== "Secundaria" || !profileMateria || !isMateriaSecundaria(profileMateria)) return null;
+    return resolveMateriaSecundaria(profileMateria, grado);
+  }, [nivel, profileMateria, grado]);
   const camposFiltrados = useMemo(
-    () => filtrarCamposPorNivel(camposDisponibles, nivel),
-    [camposDisponibles, nivel],
+    () => {
+      const filtrados = filtrarCamposPorNivel(camposDisponibles, nivel);
+      if (profileLocked && nivel === "Secundaria" && materiaSecundariaActual) {
+        return filtrados.includes(materiaSecundariaActual) ? [materiaSecundariaActual] : [];
+      }
+      return filtrados;
+    },
+    [camposDisponibles, nivel, profileLocked, materiaSecundariaActual],
   );
 
   // Campos activos según la modalidad.
@@ -522,7 +537,7 @@ export function TeacherDashboard() {
     let cancelado = false;
     fetch("/api/teacher/profile")
       .then((res) => res.json())
-      .then((data: { profile: { nombre: string; escuela: string; nivel: string; grado: string } | null }) => {
+      .then((data: { profile: { nombre: string; escuela: string; nivel: string; grado: string; materia: string | null } | null }) => {
         if (cancelado) return;
         if (data.profile) {
           setNombreDocente(data.profile.nombre);
@@ -531,8 +546,9 @@ export function TeacherDashboard() {
             setNivel(data.profile.nivel as NivelEdu);
           }
           setGrado(data.profile.grado);
+          setProfileMateria(data.profile.materia ?? null);
           setProfileLocked(true);
-          setProfileMissing(false);
+          setProfileMissing(!isAdmin && data.profile.nivel === "Secundaria" && !data.profile.materia);
         } else if (!isAdmin) {
           setProfileMissing(true);
         }
@@ -565,6 +581,14 @@ export function TeacherDashboard() {
       cancelled = true;
     };
   }, [gradoLabel]);
+
+  // En secundaria el perfil fija la materia, pero el grado queda libre.
+  useEffect(() => {
+    if (!profileLocked || nivel !== "Secundaria" || !materiaSecundariaActual) return;
+    setModalidad("secuencial");
+    setCampo(materiaSecundariaActual);
+    setCamposProyecto([]);
+  }, [profileLocked, nivel, materiaSecundariaActual]);
 
   // Cargar contenidos de los campos activos que aún no estén en memoria.
   useEffect(() => {
@@ -1015,7 +1039,9 @@ export function TeacherDashboard() {
                 </p>
               ) : profileLocked ? (
                 <p className="hint" style={{ marginBottom: 12 }}>
-                  Tu nombre, escuela, nivel y grado provienen de tu perfil.{" "}
+                  {nivel === "Secundaria"
+                    ? "Tu nombre, escuela, nivel y materia provienen de tu perfil; puedes elegir cualquiera de los tres grados. "
+                    : "Tu nombre, escuela, nivel y grado provienen de tu perfil. "}
                   <a href="/perfil" style={{ textDecoration: "underline" }}>
                     Editar mi perfil
                   </a>
@@ -1077,7 +1103,7 @@ export function TeacherDashboard() {
                     <select
                       value={grado}
                       onChange={(e) => setGrado(e.target.value)}
-                      disabled={profileLocked}
+                      disabled={profileLocked && nivel !== "Secundaria"}
                     >
                       {gradosDisponibles.map((g) => (
                         <option key={g}>{g}</option>
@@ -1090,7 +1116,12 @@ export function TeacherDashboard() {
                       <button type="button" data-active={modalidad === "secuencial"} onClick={() => setModalidad("secuencial")}>
                         Secuencial
                       </button>
-                      <button type="button" data-active={modalidad === "proyecto"} onClick={() => setModalidad("proyecto")}>
+                      <button
+                        type="button"
+                        data-active={modalidad === "proyecto"}
+                        onClick={() => setModalidad("proyecto")}
+                        disabled={profileLocked && nivel === "Secundaria"}
+                      >
                         Proyecto
                       </button>
                     </div>
@@ -1101,7 +1132,11 @@ export function TeacherDashboard() {
                   <div className="field span-2">
                     <label>{modalidad === "proyecto" ? "Campos formativos (varios)" : "Campo formativo"}</label>
                     {modalidad === "secuencial" ? (
-                      <select value={campo} onChange={(e) => setCampo(e.target.value)}>
+                      <select
+                        value={campo}
+                        onChange={(e) => setCampo(e.target.value)}
+                        disabled={profileLocked && nivel === "Secundaria"}
+                      >
                         <option value="">Selecciona un campo</option>
                         {camposFiltrados.map((c) => (
                           <option key={c} value={c}>

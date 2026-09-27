@@ -61,6 +61,7 @@ beforeEach(() => {
     escuela: "Escuela Base",
     nivel: "Primaria",
     grado: "3°",
+    materia: null,
   });
   generateMock.mockResolvedValue({
     title: "Plan",
@@ -167,6 +168,61 @@ describe("POST /api/generate", () => {
         grado: "3 primaria",
         fase: "Fase 4",
       }),
+      expect.any(String),
+    );
+  });
+
+  it("permite al docente de secundaria elegir cualquiera de los tres grados en su materia", async () => {
+    prismaMock.teacherProfile.findUnique.mockResolvedValue({
+      nombre: "Prof. Diana",
+      escuela: "Secundaria Base",
+      nivel: "Secundaria",
+      grado: "1°",
+      materia: "ESPAÑOL",
+    });
+    const res = await call({
+      ...validBody,
+      grado: "3 secundaria",
+      fase: "Fase 6",
+      campos: ["ESPAÑOL"],
+    });
+    expect(res.status).toBe(200);
+    expect(generateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nombreDocente: "Prof. Diana",
+        grado: "3 secundaria",
+        fase: "Fase 6",
+        campos: ["ESPAÑOL"],
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("impide al docente de secundaria generar otra materia", async () => {
+    prismaMock.teacherProfile.findUnique.mockResolvedValue({
+      nombre: "Prof. Diana",
+      escuela: "Secundaria Base",
+      nivel: "Secundaria",
+      grado: "1°",
+      materia: "ESPAÑOL",
+    });
+    const res = await call({ ...validBody, grado: "2 secundaria", campos: ["MATEMATICAS"] });
+    expect(res.status).toBe(403);
+    expect(generateMock).not.toHaveBeenCalled();
+  });
+
+  it("mapea Ciencias a Biología, Física y Química según el grado", async () => {
+    prismaMock.teacherProfile.findUnique.mockResolvedValue({
+      nombre: "Prof. Diana",
+      escuela: "Secundaria Base",
+      nivel: "Secundaria",
+      grado: "1°",
+      materia: "CIENCIAS",
+    });
+    const res = await call({ ...validBody, grado: "2 secundaria", campos: ["FISICA"] });
+    expect(res.status).toBe(200);
+    expect(generateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ grado: "2 secundaria", campos: ["FISICA"] }),
       expect.any(String),
     );
   });

@@ -79,8 +79,9 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
-// Perfil fijo del docente: su identidad (nombre + escuela) y su nivel/grado se
-// estampan en cada planeación desde el servidor, evitando que una cuenta genere
+// Perfil fijo del docente: su identidad (nombre + escuela), nivel y, en
+// secundaria, materia se estampan desde el servidor. El grado queda libre en
+// secundaria y permanece fijo en los demás niveles, evitando que una cuenta genere
 // planeaciones para otros docentes. `editCount` cuenta las MODIFICACIONES tras
 // el alta (el alta no cuenta); al llegar al tope el docente debe pedir el
 // cambio al administrador, que puede reiniciar el contador.
@@ -91,6 +92,7 @@ model TeacherProfile {
   escuela   String
   nivel     String
   grado     String
+  materia   String?
   editCount Int      @default(0)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

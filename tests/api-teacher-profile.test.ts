@@ -12,7 +12,13 @@ vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 
 import { POST } from "@/app/api/teacher/profile/route";
 
-const validBody = { nombre: "Diana R.", escuela: "Primaria Juárez", nivel: "Primaria", grado: "3°" };
+const validBody = {
+  nombre: "Diana R.",
+  escuela: "Primaria Juárez",
+  nivel: "Primaria",
+  grado: "3°",
+  materia: null,
+};
 
 function call(body: unknown) {
   return POST(
@@ -47,6 +53,24 @@ describe("POST /api/teacher/profile", () => {
     expect(prismaMock.teacherProfile.create).not.toHaveBeenCalled();
   });
 
+  it("exige materia para un perfil de secundaria", async () => {
+    const res = await call({ ...validBody, nivel: "Secundaria", grado: "1°", materia: null });
+    expect(res.status).toBe(400);
+    expect(prismaMock.teacherProfile.create).not.toHaveBeenCalled();
+  });
+
+  it("acepta una materia válida de secundaria", async () => {
+    prismaMock.teacherProfile.findUnique.mockResolvedValue(null);
+    const res = await call({
+      ...validBody,
+      nivel: "Secundaria",
+      grado: "1°",
+      materia: "MATEMATICAS",
+    });
+    expect(res.status).toBe(200);
+    expect(prismaMock.teacherProfile.create).toHaveBeenCalled();
+  });
+
   it("da de alta sin consumir cambios (editCount 0)", async () => {
     prismaMock.teacherProfile.findUnique.mockResolvedValue(null);
     const res = await call(validBody);
@@ -70,5 +94,23 @@ describe("POST /api/teacher/profile", () => {
     const res = await call({ ...validBody, escuela: "Tercer intento" });
     expect(res.status).toBe(403);
     expect(prismaMock.teacherProfile.update).not.toHaveBeenCalled();
+  });
+
+  it("permite completar la materia de un perfil antiguo sin consumir cambios", async () => {
+    const legacy = {
+      nombre: "Diana R.",
+      escuela: "Secundaria Juárez",
+      nivel: "Secundaria",
+      grado: "1°",
+      materia: null,
+      editCount: 2,
+    };
+    prismaMock.teacherProfile.findUnique.mockResolvedValue(legacy);
+    prismaMock.teacherProfile.update.mockResolvedValue({ ...legacy, materia: "ESPAÑOL" });
+    const res = await call({ ...legacy, materia: "ESPAÑOL" });
+    expect(res.status).toBe(200);
+    expect(prismaMock.teacherProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { materia: "ESPAÑOL" } }),
+    );
   });
 });

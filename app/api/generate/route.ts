@@ -8,7 +8,15 @@ import {
   buildPlanningPrompt,
   defaultPlanningPromptTemplate,
 } from "@/lib/generation/build-planning-prompt";
-import { buildFase, buildGradoLabel, isNivel } from "@/lib/generation/nivel";
+import {
+  buildFase,
+  buildGradoLabel,
+  gradoDesdeEtiqueta,
+  isGradoValido,
+  isMateriaSecundaria,
+  isNivel,
+  resolveMateriaSecundaria,
+} from "@/lib/generation/nivel";
 import { planningInputSchema } from "@/lib/generation/types";
 import { FREE_GENERATION_LIMIT } from "@/lib/membership";
 
@@ -52,13 +60,41 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    input = {
-      ...input,
-      nombreDocente: profile.nombre,
-      nombreEscuela: profile.escuela,
-      grado: buildGradoLabel(profile.nivel, profile.grado),
-      fase: buildFase(profile.nivel, profile.grado),
-    };
+    if (profile.nivel === "Secundaria") {
+      if (!profile.materia || !isMateriaSecundaria(profile.materia)) {
+        return NextResponse.json(
+          { error: "Completa la materia que impartes en tu perfil docente." },
+          { status: 409 },
+        );
+      }
+      const requestedGrade = gradoDesdeEtiqueta(input.grado);
+      if (!requestedGrade || !isGradoValido("Secundaria", requestedGrade)) {
+        return NextResponse.json({ error: "Selecciona un grado válido de secundaria." }, { status: 400 });
+      }
+      const materia = resolveMateriaSecundaria(profile.materia, requestedGrade);
+      if (input.campos.length !== 1 || input.campos[0] !== materia) {
+        return NextResponse.json(
+          { error: "Solo puedes generar planeaciones de la materia configurada en tu perfil." },
+          { status: 403 },
+        );
+      }
+      input = {
+        ...input,
+        nombreDocente: profile.nombre,
+        nombreEscuela: profile.escuela,
+        grado: buildGradoLabel("Secundaria", requestedGrade),
+        fase: buildFase("Secundaria", requestedGrade),
+        modalidad: "secuencial",
+      };
+    } else {
+      input = {
+        ...input,
+        nombreDocente: profile.nombre,
+        nombreEscuela: profile.escuela,
+        grado: buildGradoLabel(profile.nivel, profile.grado),
+        fase: buildFase(profile.nivel, profile.grado),
+      };
+    }
   }
 
   // Guard de membresía: usuarios FREE tienen un límite de generaciones; los

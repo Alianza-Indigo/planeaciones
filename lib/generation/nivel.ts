@@ -11,6 +11,39 @@ export const GRADOS_POR_NIVEL: Record<NivelEdu, string[]> = {
   Secundaria: ["1°", "2°", "3°"],
 };
 
+export const MATERIAS_SECUNDARIA = [
+  "ESPAÑOL",
+  "INGLES",
+  "ARTES",
+  "MATEMATICAS",
+  "CIENCIAS",
+  "HISTORIA",
+  "FORMACION CIVICA Y ETICA",
+  "TECNOLOGIA",
+  "TUTORIA",
+  "EDUCACION FISICA",
+] as const;
+
+export type MateriaSecundaria = (typeof MATERIAS_SECUNDARIA)[number];
+
+export function isMateriaSecundaria(value: string): value is MateriaSecundaria {
+  return (MATERIAS_SECUNDARIA as readonly string[]).includes(value);
+}
+
+// En la NEM, Ciencias cambia de disciplina en cada grado de secundaria.
+export function resolveMateriaSecundaria(materia: MateriaSecundaria, grado: string): string {
+  if (materia !== "CIENCIAS") return materia;
+  const digit = grado.replace(/\D/g, "");
+  if (digit === "1") return "BIOLOGIA";
+  if (digit === "2") return "FISICA";
+  return "QUIMICA";
+}
+
+export function gradoDesdeEtiqueta(value: string): string | null {
+  const match = value.match(/[1-3]/);
+  return match ? `${match[0]}°` : null;
+}
+
 export function isNivel(value: string): value is NivelEdu {
   return (NIVELES as readonly string[]).includes(value);
 }

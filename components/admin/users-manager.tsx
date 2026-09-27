@@ -14,6 +14,7 @@ export type AdminUser = {
     escuela: string;
     nivel: string;
     grado: string;
+    materia: string | null;
     editCount: number;
   } | null;
 };
@@ -95,6 +96,7 @@ export function UsersManager({ users, currentUserId }: { users: AdminUser[]; cur
                         <span>
                           {perfil.escuela} · {perfil.grado} {perfil.nivel.toLowerCase()}
                         </span>
+                        {perfil.materia ? <span className="hint">{perfil.materia}</span> : null}
                         <span
                           className={`tag ${cambiosAgotados ? "missing" : "neutral"}`}
                           style={{ alignSelf: "flex-start" }}

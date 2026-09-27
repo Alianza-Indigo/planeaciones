@@ -53,6 +53,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ profile, remainingEdits: remainingEdits(profile.editCount) });
   }
 
+  // Migración amable: un perfil de secundaria anterior puede registrar por
+  // primera vez su materia sin consumir una edición, incluso si agotó el cupo.
+  const completingLegacySubject =
+    existing.nivel === "Secundaria" &&
+    !existing.materia &&
+    data.nivel === existing.nivel &&
+    data.nombre === existing.nombre &&
+    data.escuela === existing.escuela &&
+    data.grado === existing.grado &&
+    !!data.materia;
+
+  if (completingLegacySubject) {
+    const profile = await prisma.teacherProfile.update({
+      where: { userId },
+      data: { materia: data.materia },
+    });
+    return NextResponse.json({ profile, remainingEdits: remainingEdits(profile.editCount) });
+  }
+
   // Modificación: consume un cambio; bloqueada al agotar el tope.
   if (existing.editCount >= MAX_PROFILE_EDITS) {
     return NextResponse.json(

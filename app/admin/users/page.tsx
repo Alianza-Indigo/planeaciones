@@ -23,6 +23,7 @@ export default async function AdminUsersPage() {
           escuela: user.teacherProfile.escuela,
           nivel: user.teacherProfile.nivel,
           grado: user.teacherProfile.grado,
+          materia: user.teacherProfile.materia,
           editCount: user.teacherProfile.editCount,
         }
       : null,
