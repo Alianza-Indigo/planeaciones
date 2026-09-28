@@ -484,6 +484,8 @@ export function TeacherDashboard() {
     if (nivel !== "Secundaria" || !profileMateria || !isMateriaSecundaria(profileMateria)) return null;
     return resolveMateriaSecundaria(profileMateria, grado);
   }, [nivel, profileMateria, grado]);
+  const materiaSecundariaFija = profileLocked && nivel === "Secundaria" && !!materiaSecundariaActual;
+  const campoEfectivo = materiaSecundariaFija ? materiaSecundariaActual : campo;
   const camposFiltrados = useMemo(
     () => {
       const filtrados = filtrarCamposPorNivel(camposDisponibles, nivel);
@@ -497,14 +499,17 @@ export function TeacherDashboard() {
 
   // Campos activos según la modalidad.
   const camposActivos = useMemo(
-    () => (modalidad === "proyecto" ? camposProyecto : campo ? [campo] : []),
-    [modalidad, camposProyecto, campo],
+    () => (modalidad === "proyecto" ? camposProyecto : campoEfectivo ? [campoEfectivo] : []),
+    [modalidad, camposProyecto, campoEfectivo],
   );
   const camposActivosKey = camposActivos.join("|");
 
   // En Secuencial, fuera del campo de ciencias, el contenido es de selección única.
   const campoUnico =
-    modalidad === "secuencial" && !!campo && CAMPO_CIENCIAS[nivel] !== undefined && campo !== CAMPO_CIENCIAS[nivel];
+    modalidad === "secuencial" &&
+    !!campoEfectivo &&
+    CAMPO_CIENCIAS[nivel] !== undefined &&
+    campoEfectivo !== CAMPO_CIENCIAS[nivel];
 
   const selectedContenidos = useMemo(
     () =>
@@ -584,11 +589,11 @@ export function TeacherDashboard() {
 
   // En secundaria el perfil fija la materia, pero el grado queda libre.
   useEffect(() => {
-    if (!profileLocked || nivel !== "Secundaria" || !materiaSecundariaActual) return;
+    if (!materiaSecundariaFija || !materiaSecundariaActual) return;
     setModalidad("secuencial");
     setCampo(materiaSecundariaActual);
     setCamposProyecto([]);
-  }, [profileLocked, nivel, materiaSecundariaActual]);
+  }, [materiaSecundariaFija, materiaSecundariaActual]);
 
   // Cargar contenidos de los campos activos que aún no estén en memoria.
   useEffect(() => {
@@ -1120,7 +1125,7 @@ export function TeacherDashboard() {
                         type="button"
                         data-active={modalidad === "proyecto"}
                         onClick={() => setModalidad("proyecto")}
-                        disabled={profileLocked && nivel === "Secundaria"}
+                        disabled={materiaSecundariaFija}
                       >
                         Proyecto
                       </button>
@@ -1133,9 +1138,9 @@ export function TeacherDashboard() {
                     <label>{modalidad === "proyecto" ? "Campos formativos (varios)" : "Campo formativo"}</label>
                     {modalidad === "secuencial" ? (
                       <select
-                        value={campo}
+                        value={campoEfectivo}
                         onChange={(e) => setCampo(e.target.value)}
-                        disabled={profileLocked && nivel === "Secundaria"}
+                        disabled={materiaSecundariaFija}
                       >
                         <option value="">Selecciona un campo</option>
                         {camposFiltrados.map((c) => (
