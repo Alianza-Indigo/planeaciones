@@ -25,3 +25,7 @@ No se añaden secretos a GitHub ni se activan variables en Vercel.
 7. Habilitar ADIA_MCP_ENABLED=true sólo después de completar 1–6.
 
 El widget es una primera versión de interfaz; la exportación DOCX nativa todavía no está implementada.
+
+## Decisión de alcance (10 de octubre de 2026)
+La primera distribución se limita al espacio de trabajo ChatGPT Business de la organización. La integración con afiliación de Fuerza Índigo se pospone. No se crearán cuentas adicionales para docentes en esta fase.
+La URL del servidor no se difundirá fuera del Team. Esta medida no sustituye autenticación HTTP: no habilitar en producción hasta comprobar los riesgos de exposición del motor pedagógico y la compatibilidad real en ChatGPT.
