@@ -109,12 +109,14 @@ export function prepararPlaneacion(raw: unknown) {
     instrucciones:
       "Genera todas las sesiones solicitadas siguiendo el prompt de ADIA. " +
       "No llames a APIs externas de IA. Utiliza el modelo de esta conversación. " +
-      "Si la salida es extensa, entrégala por sesiones completas, sin abreviar. " +
-      "No inventes PDA ni contenidos. Tras redactar la planeación COMPLETA, llama " +
-      "a preparar_materiales con el texto completo de la planeación. Genera también " +
-      "TODOS los materiales didácticos de cada sesión. Finalmente llama a " +
-      "exportar_documentos_docx con el texto íntegro de la planeación y los materiales; " +
-      "debes entregar DOS archivos DOCX descargables, no limitarte al chat.",
+      "No inventes PDA ni contenidos. Genera todas las sesiones completas sin abreviar. " +
+      "Llama a preparar_materiales con el texto completo de la planeación y redacta los " +
+      "materiales completos de cada sesión. Utiliza la capacidad de archivos de ChatGPT " +
+      "para generar directamente dos Word descargables: ADIA_planeacion.docx y " +
+      "ADIA_materiales_didacticos.docx. No envíes el contenido al servidor para " +
+      "convertirlo a DOCX. Conserva la estructura NEM y los apoyos DUA. No sustituyas " +
+      "los dos archivos por texto del chat. Si ChatGPT no puede generar archivos, " +
+      "informa la limitación sin afirmar que los documentos están disponibles.",
   };
 }
 
@@ -126,6 +128,9 @@ export function prepararMateriales(rawInput: unknown, planeacion: string) {
   }
   return {
     prompt: buildMaterialesPrompt(input, planeacion),
-    instrucciones: "Genera los materiales didácticos completos por sesión en esta conversación, sin Gemini. Al terminar llama obligatoriamente a exportar_documentos_docx con los materiales completos y la planeación íntegra. Entrega los dos DOCX descargables.",
+    instrucciones: "Genera todos los materiales didácticos completos para cada sesión. " +
+      "Después crea directamente con ChatGPT los documentos Word " +
+      "ADIA_planeacion.docx y ADIA_materiales_didacticos.docx, sin convertirlos " +
+      "en el servidor MCP. Ofrece los dos archivos reales para descarga; no los simules.",
   };
 }
