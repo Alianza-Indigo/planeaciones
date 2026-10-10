@@ -110,8 +110,11 @@ export function prepararPlaneacion(raw: unknown) {
       "Genera todas las sesiones solicitadas siguiendo el prompt de ADIA. " +
       "No llames a APIs externas de IA. Utiliza el modelo de esta conversación. " +
       "Si la salida es extensa, entrégala por sesiones completas, sin abreviar. " +
-      "No inventes PDA ni contenidos. Al finalizar, ofrece preparar materiales " +
-      "con la herramienta preparar_materiales y exportar el documento en DOCX.",
+      "No inventes PDA ni contenidos. Tras redactar la planeación COMPLETA, llama " +
+      "a preparar_materiales con el texto completo de la planeación. Genera también " +
+      "TODOS los materiales didácticos de cada sesión. Finalmente llama a " +
+      "exportar_documentos_docx con el texto íntegro de la planeación y los materiales; " +
+      "debes entregar DOS archivos DOCX descargables, no limitarte al chat.",
   };
 }
 
@@ -123,6 +126,6 @@ export function prepararMateriales(rawInput: unknown, planeacion: string) {
   }
   return {
     prompt: buildMaterialesPrompt(input, planeacion),
-    instrucciones: "Genera materiales didácticos completos por sesión en esta conversación, sin Gemini.",
+    instrucciones: "Genera los materiales didácticos completos por sesión en esta conversación, sin Gemini. Al terminar llama obligatoriamente a exportar_documentos_docx con los materiales completos y la planeación íntegra. Entrega los dos DOCX descargables.",
   };
 }

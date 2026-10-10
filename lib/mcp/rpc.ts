@@ -1,5 +1,7 @@
 import { consultarCurriculo, prepararPlaneacion, prepararMateriales } from "@/lib/mcp/adia";
-import { ADIA_UI_MIME, ADIA_UI_URI, ADIA_TOOLS } from "@/lib/mcp/registry";
+import { ADIA_UI_MIME, ADIA_UI_URI, ADIA_DOWNLOAD_URI, ADIA_TOOLS } from "@/lib/mcp/registry";
+import { ADIA_DOWNLOAD_HTML } from "@/lib/mcp/download-widget";
+import { exportarDocumentosAdia } from "@/lib/mcp/docx";
 import { ADIA_WIDGET_HTML } from "@/lib/mcp/widget";
 
 export type RpcRequest = {
@@ -27,7 +29,7 @@ export function dispatchAdiaRpc(msg: RpcRequest): unknown {
         protocolVersion: "2025-11-25",
         capabilities: { tools: {}, resources: {} },
         serverInfo: { name: "adia-planeaciones", version: "1.0.0" },
-        instructions: "Abre ADIA con abrir_adia. Consulta contenidos y PDA reales del currículo. Llama preparar_planeacion para obtener el prompt. Genera con el modelo de ChatGPT del docente, sin usar API externa de IA."
+        instructions: "Abre ADIA con abrir_adia. Consulta contenidos y PDA reales del currículo. Llama preparar_planeacion para obtener el prompt. Genera con el modelo de ChatGPT del docente, sin usar API externa de IA. AL FINAL entrega la planeación y los materiales completos en dos documentos Word usando exportar_documentos_docx; no termines sólo con texto en el chat."
       });
     case "notifications/initialized":
       return null;
@@ -36,12 +38,14 @@ export function dispatchAdiaRpc(msg: RpcRequest): unknown {
     case "tools/list":
       return reply(id, { tools: ADIA_TOOLS });
     case "resources/list":
-      return reply(id, { resources: [{ uri: ADIA_UI_URI, name: "Interfaz ADIA", mimeType: ADIA_UI_MIME }] });
+      return reply(id, { resources: [{ uri: ADIA_UI_URI, name: "Interfaz ADIA", mimeType: ADIA_UI_MIME }, { uri: ADIA_DOWNLOAD_URI, name: "Descargar Word", mimeType: ADIA_UI_MIME }] });
     case "resources/templates/list":
       return reply(id, { resourceTemplates: [] });
     case "resources/read":
       return params.uri === ADIA_UI_URI
         ? reply(id, { contents: [{ uri: ADIA_UI_URI, mimeType: ADIA_UI_MIME, text: ADIA_WIDGET_HTML }] })
+        : params.uri === ADIA_DOWNLOAD_URI
+        ? reply(id, { contents: [{ uri: ADIA_DOWNLOAD_URI, mimeType: ADIA_UI_MIME, text: ADIA_DOWNLOAD_HTML }] })
         : error(id, -32602, "Recurso desconocido.");
     case "tools/call": {
       if (typeof params.name !== "string" || params.arguments === null ||
@@ -52,6 +56,8 @@ export function dispatchAdiaRpc(msg: RpcRequest): unknown {
       try {
         let result: unknown;
         switch (params.name) {
+          case "exportar_documentos_docx":
+            return reply(id, exportarDocumentosAdia(args));
           case "abrir_adia":
             result = { listo: true, mensaje: "Formulario interactivo ADIA disponible." };
             break;

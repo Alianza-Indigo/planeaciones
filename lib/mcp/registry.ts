@@ -1,4 +1,5 @@
 export const ADIA_UI_URI = "ui://adia/planeador.html";
+export const ADIA_DOWNLOAD_URI = "ui://adia/documentos.html";
 export const ADIA_UI_MIME = "text/html;profile=mcp-app";
 
 const stringArray = { type: "array", items: { type: "string" } };
@@ -26,6 +27,17 @@ const inputSchema = {
 };
 
 export const ADIA_TOOLS = [
+  {
+    name: "exportar_documentos_docx",
+    title: "Entregar planeación y materiales en Word",
+    description: "OBLIGATORIA al finalizar: convierte planeación y materiales completos a dos archivos DOCX descargables. Llamar cuando ambos textos estén completos, sin resumirlos ni sustituirlos.",
+    inputSchema: { type: "object", required: ["planeacion", "materiales"], properties: {
+      planeacion: {type:"string", description:"Texto completo de todas las sesiones, sin abreviar"},
+      materiales: {type:"string", description:"Materiales didácticos completos de cada sesión, sin abreviar"},
+      grado: {type:"string"}
+    } },
+    _meta: {ui:{resourceUri:ADIA_DOWNLOAD_URI}, "openai/outputTemplate":ADIA_DOWNLOAD_URI}
+  },
   {
     name: "abrir_adia",
     title: "Abrir ADIA",
