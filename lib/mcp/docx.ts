@@ -71,7 +71,7 @@ const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
   '<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/>' +
   '<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="220"/></w:pPr>' +
   '<w:rPr><w:color w:val="64748B"/><w:sz w:val="20"/></w:rPr></w:style>' +
-  ...[1, 2, 3].map((i) =>
+  [1, 2, 3].map((i) =>
     '<w:style w:type="paragraph" w:styleId="Heading' + i + '"><w:name w:val="heading ' + i + '"/>' +
     '<w:basedOn w:val="Normal"/><w:pPr><w:keepNext/>' +
     '<w:spacing w:before="' + (i === 1 ? 270 : 200) + '" w:after="110"/></w:pPr>' +
