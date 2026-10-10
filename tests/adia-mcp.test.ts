@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { consultarCurriculo, prepararPlaneacion } from "@/lib/mcp/adia";
 import { dispatchAdiaRpc } from "@/lib/mcp/rpc";
 import { ADIA_WIDGET_HTML } from "@/lib/mcp/widget";
-import { generarDocxAdia, exportarDocumentosAdia } from "@/lib/mcp/docx";
-import { inflateRawSync } from "node:zlib";
 
 describe("ADIA MCP", () => {
   it("ofrece formulario y herramientas a ChatGPT", () => {
@@ -50,21 +48,19 @@ describe("ADIA MCP", () => {
   });
 });
 
-describe("Archivos Word de ADIA", () => {
-  const text = "# Sesión 1\\n## Inicio\\nPreparar el aula para la actividad y compartir instrucciones. ".repeat(7);
-  it("genera archivo Word OOXML con ZIP válido", () => {
-    const doc = generarDocxAdia("Planeación didáctica", text, "Primaria");
-    expect(doc.subarray(0, 4).toString("hex")).toBe("504b0304");
-    const n = doc.readUInt16LE(26);
-    expect(doc.subarray(30, 30+n).toString()).toBe("[Content_Types].xml");
-    const content = inflateRawSync(doc.subarray(30+n, 30+n+doc.readUInt32LE(18))).toString();
-    expect(content).toContain("wordprocessingml.document.main+xml");
-  });
-  it("entrega dos archivos independientes ocultando el base64 del chat", () => {
-    const result = exportarDocumentosAdia({ planeacion: text, materiales: text, grado:"2 primaria" });
-    expect(result.structuredContent.documentos).toHaveLength(2);
-    expect(result._meta.adia_docs[0].file_name).toBe("ADIA_planeacion.docx");
-    expect(result._meta.adia_docs[1].file_name).toBe("ADIA_materiales_didacticos.docx");
-    expect(result.content[0].text).not.toContain("content_base64");
+describe("Word creado por ChatGPT", () => {
+  it("expone las cuatro herramientas curriculares sin exportador del servidor", () => {
+    const tools = dispatchAdiaRpc({ jsonrpc:"2.0", id:20, method:"tools/list" }) as {
+      result: { tools: { name: string }[] };
+    };
+    expect(tools.result.tools.map(t=>t.name)).toEqual([
+      "abrir_adia", "consultar_curriculo", "preparar_planeacion", "preparar_materiales"
+    ]);
+    const init = dispatchAdiaRpc({ jsonrpc:"2.0", id:21, method:"initialize" }) as {
+      result: { instructions: string };
+    };
+    expect(init.result.instructions).toContain("ADIA_planeacion.docx");
+    expect(init.result.instructions).toContain("ADIA_materiales_didacticos.docx");
+    expect(init.result.instructions).not.toContain("exportar_documentos_docx");
   });
 });
