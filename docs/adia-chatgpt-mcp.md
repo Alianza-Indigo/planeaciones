@@ -32,3 +32,9 @@ La URL del servidor no se difundirá fuera del Team. Esta medida no sustituye au
 
 ## Verificación automatizada
 El flujo GitHub Actions `adia-ci.yml` ejecuta instalación reproducible, generación de Prisma Client, typecheck y Vitest para cada push a main. La compilación de producción continúa a cargo de Vercel. La interfaz usa `ui/message` con `content` como lista de bloques conforme a MCP Apps.
+
+## Actualización de producción — 10 de octubre de 2026
+
+El usuario confirmó que ChatGPT genera documentos Word directamente. Se elimina el convertidor DOCX implementado dentro del servidor MCP debido a fallas de operación. El flujo vigente mantiene las cuatro herramientas `abrir_adia`, `consultar_curriculo`, `preparar_planeacion` y `preparar_materiales`. El modelo de ChatGPT del docente redacta la planeación y los materiales y crea directamente dos documentos descargables: `ADIA_planeacion.docx` y `ADIA_materiales_didacticos.docx`.
+
+Se retiraron del código activo `lib/mcp/docx.ts`, `lib/mcp/download-widget.ts`, la herramienta `exportar_documentos_docx` y el recurso `ui://adia/documentos.html`. No cambia el sitio web ni su flujo independiente con Gemini. La generación nativa de archivos depende de las capacidades disponibles en cada conversación; ante una limitación se informa, sin simular documentos. El administrador debe ejecutar `Scan Tools` o refrescar la app ADIA en ChatGPT Business tras desplegar la actualización.
