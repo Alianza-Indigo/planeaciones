@@ -54,7 +54,10 @@ export function consultarCurriculo(grado: string, campo?: string) {
 
 /** Evita enviar contenidos o PDA fabricados a la generación y limita el tamaño. */
 export function validarPlaneacion(raw: unknown): PlanningInput {
-  const candidate = raw && typeof raw === "object" && !Array.isArray(raw)\n    ? { ...raw, fase: (raw as Record<string, unknown>).fase || "Fase provisional" }\n    : raw;\n  const result = planningInputSchema.safeParse(candidate);
+  const candidate = raw && typeof raw === "object" && !Array.isArray(raw)
+    ? { ...(raw as Record<string, unknown>), fase: (raw as Record<string, unknown>).fase || "Fase provisional" }
+    : raw;
+  const result = planningInputSchema.safeParse(candidate);
   if (!result.success) throw new Error("Datos incompletos o inválidos para la planeación.");
   const input = result.data;
   const { nivel, numero } = parseGrado(input.grado);
