@@ -13,7 +13,7 @@ describe("ADIA MCP", () => {
   });
   it("sirve la UI embebida y envía mensaje conforme al formato esperado", () => {
     expect(ADIA_WIDGET_HTML).toContain("ui/initialize");
-    expect(ADIA_WIDGET_HTML).toContain("content:{type:'text',text:");
+    expect(ADIA_WIDGET_HTML).toContain("content:[{type:'text',text:");
     expect(ADIA_WIDGET_HTML).toContain("camposProyectoWrap");
     const data = dispatchAdiaRpc({
       jsonrpc: "2.0", id: 3, method: "resources/read", params: { uri: "ui://adia/planeador.html" }

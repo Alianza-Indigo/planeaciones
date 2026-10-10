@@ -29,3 +29,6 @@ El widget es una primera versión de interfaz; la exportación DOCX nativa todav
 ## Decisión de alcance (10 de octubre de 2026)
 La primera distribución se limita al espacio de trabajo ChatGPT Business de la organización. La integración con afiliación de Fuerza Índigo se pospone. No se crearán cuentas adicionales para docentes en esta fase.
 La URL del servidor no se difundirá fuera del Team. Esta medida no sustituye autenticación HTTP: no habilitar en producción hasta comprobar los riesgos de exposición del motor pedagógico y la compatibilidad real en ChatGPT.
+
+## Verificación automatizada
+El flujo GitHub Actions `adia-ci.yml` ejecuta instalación reproducible, generación de Prisma Client, typecheck y Vitest para cada push a main. La compilación de producción continúa a cargo de Vercel. La interfaz usa `ui/message` con `content` como lista de bloques conforme a MCP Apps.

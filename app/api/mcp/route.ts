@@ -34,5 +34,7 @@ export async function POST(request: Request) {
 }
 
 export function GET() {
-  return disabled();
+  if (process.env.ADIA_MCP_ENABLED !== "true") return disabled();
+  return new Response("Stream not supported", { status: 405, headers: { Allow: "POST" } });
 }
+
